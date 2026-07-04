@@ -61,7 +61,11 @@ func NoiseForAlert(alertID string, classifications []FireClassification, cfg Con
 		case ClassNoise:
 			out.Counts.Noise++
 			noiseConf += c.Confidence
-			noiseConfSq += c.Confidence * c.Confidence
+			// Explicit float64 conversion disables FMA fusion, which
+			// otherwise diverges across architectures (Go spec: "The
+			// fused operations can be disabled with explicit
+			// conversions"; ADR 0005 determinism).
+			noiseConfSq += float64(c.Confidence * c.Confidence)
 			participatingConf += c.Confidence
 			participating++
 		case ClassActionable:

@@ -1,0 +1,15 @@
+{
+  "criticality_tier": null,
+  "alerts": [
+    {
+      "id": "orphan-noisy",
+      "created_days_before_end": 100,
+      "fires": [
+        { "day_offset": 8, "closed_after_min": 25, "disposition": "no_action" },
+        { "day_offset": 33, "closed_after_min": 30, "disposition": "no_action" },
+        { "day_offset": 59, "closed_after_min": 20, "disposition": "no_action" }
+      ]
+    }
+  ],
+  "archetype_signals": [ { "applies": false, "satisfied": [] } ]
+}
