@@ -64,8 +64,8 @@ makes pulls reproducible.
 Per ADR 0004, there are three narrow interfaces, one per data class. A vendor
 module implements whichever apply; the core discovers capabilities by which
 interfaces a registered adapter satisfies. Signatures are **language-agnostic
-pseudocode** — no implementation language has been chosen yet (see Open
-questions).
+pseudocode**; per [ADR 0005](../decision-records/0005-implementation-language-go.md)
+they will be realized as Go interfaces.
 
 ```
 record Scope:
@@ -544,11 +544,11 @@ made here:
 
 ## Open questions
 
-- **Implementation language.** No language has been chosen; interface
-  signatures above are pseudocode, and the streaming idiom (iterator vs.
-  async generator vs. channel), plugin/registration mechanism, and dependency
-  lint tooling all depend on it. Owner: dave — resolve before any adapter
-  implementation starts.
+- ~~Implementation language~~ — resolved by
+  [ADR 0005](../decision-records/0005-implementation-language-go.md): Go.
+  Interfaces become Go interfaces with type-assertion capability discovery,
+  iterator-style streaming (not channels) for deterministic ordering, and
+  compile-time adapter registration.
 - **Disposition mapping tables need empirical sampling.** The taxonomy is
   fixed, but which real ServiceNow close codes (org-configurable) and
   PagerDuty resolution states map to which value must be validated against

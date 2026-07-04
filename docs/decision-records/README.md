@@ -17,3 +17,4 @@ Architecture Decision Records (ADRs) for alertlint. Each record captures one sig
 | [0002](0002-identity-resolution-strategy.md) | Layered identity resolution that assumes messy tagging | Accepted |
 | [0003](0003-deterministic-inference-boundary.md) | Deterministic/inference boundary: CLI computes, skill judges | Accepted |
 | [0004](0004-provider-adapter-interface.md) | Per-data-class provider interfaces with canonical models | Accepted |
+| [0005](0005-implementation-language-go.md) | Implementation language: Go | Accepted |
