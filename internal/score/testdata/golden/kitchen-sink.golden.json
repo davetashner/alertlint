@@ -24,7 +24,7 @@
       "finding": {
         "alert_id": "noisy-no-action",
         "noise_ratio": 0.8653846153846153,
-        "confidence": 0.8999999999999999,
+        "confidence": 0.9000000000000001,
         "band": "high",
         "low_confidence": false,
         "counts": {
