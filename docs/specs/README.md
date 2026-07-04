@@ -19,6 +19,7 @@ Feature and design specs for alertlint. A spec describes **what** a capability d
 | [archetype-library](archetype-library.md) | Versioned archetype→required-signal library and applicability inference | Draft |
 | [output-contract](output-contract.md) | Per-service JSON contract, finding taxonomy, aggregation/worklist | Draft |
 | [skill-integration](skill-integration.md) | Skill workflow: triage, enrichment, level-B recommendations, packaging | Draft |
+| [ci-pipeline](ci-pipeline.md) | GitHub Actions: doc links, traceability enforcement, Go build/test gates | Shipped |
 
 ## Reading order
 

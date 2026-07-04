@@ -60,12 +60,12 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 
 ## Build & Test
 
-_Add your build and test commands here_
+CI (`.github/workflows/ci.yml`, spec: `docs/specs/ci-pipeline.md`) runs three required checks; all are runnable locally:
 
 ```bash
-# Example:
-# npm install
-# npm test
+python3 scripts/check_traceability.py   # spec/ADR headers + REQ-ID traceability
+# doc links: lychee --offline '*.md' 'docs/**/*.md'  (if lychee installed)
+# once go.mod exists: gofmt -l . && go vet ./... && go build ./... && go test -race -count=1 ./...
 ```
 
 ## Architecture Overview
