@@ -29,6 +29,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify spec/ADR structure and REQ-ID traceability
         run: python3 scripts/check_traceability.py
+      - name: Validate archetype library against schema
+        run: |
+          python3 -m pip install --quiet jsonschema pyyaml
+          python3 scripts/check_archetypes.py
 
   go:
     runs-on: ubuntu-latest

@@ -1,0 +1,184 @@
+schema_version: 1          # format of this file; bump = CLI upgrade required
+library_version: "1.0.0"   # content version; stamped into output metadata
+
+# Closed enum of methodology anchors for this schema_version.
+# Extension is additive-only (see §6).
+anchors:
+  - golden-signals/latency
+  - golden-signals/errors
+  - golden-signals/traffic
+  - golden-signals/saturation
+  - error-budget-burn
+  - cert-expiry
+  - liveness
+  - data-integrity
+
+
+archetypes:
+  # ───────────────────────────────────────────────────────────────
+  - id: rest-api
+    description: >
+      Service exposing synchronous HTTP endpoints to callers (public or
+      internal). Callers experience its health as request latency and
+      error rate; the service experiences load as saturation.
+    applies_when:
+      any:
+        - kind: signal_class
+          equals: http_server
+          strength: strong
+        - kind: monitor_type
+          in: [apm_latency, apm_error_rate, synthetics_http]
+          strength: strong
+        - kind: tag
+          equals: "alertlint:archetype=rest-api"
+          strength: strong
+        - kind: metric_pattern
+          pattern: '(?i)(^|[._])(http|request|endpoint)s?[._](latency|duration|count|rate|errors?|[45]xx)([._]|$)'
+          strength: strong
+        - kind: metric_pattern
+          pattern: '(?i)(^|[._])(elb|alb|apigateway|nginx|envoy|istio)([._]|$)'
+          strength: weak
+    required_signals:
+      - id: latency
+        anchor: golden-signals/latency
+        rationale: >
+          Latency degradation is the earliest caller-visible symptom of an
+          unhealthy HTTP service and routinely precedes hard failure; a REST
+          API with no latency alert is blind to its primary SLO dimension.
+        absence_severity: high
+        satisfied_by:
+          any:
+            - kind: monitor_type
+              in: [apm_latency, synthetics_http]
+            - kind: metric_pattern
+              pattern: '(?i)(latency|duration|response[._]?time|p(50|9[059]))'
+      - id: error-rate
+        anchor: golden-signals/errors
+        rationale: >
+          Elevated 5xx/error ratio is the direct signal that callers are
+          failing; error-rate alerting is the minimum bar for any service
+          with an availability expectation.
+        absence_severity: high
+        satisfied_by:
+          any:
+            - kind: monitor_type
+              in: [apm_error_rate]
+            - kind: metric_pattern
+              pattern: '(?i)(error[._]?(rate|ratio|count|pct)|[._]5xx|status[._]?5)'
+      - id: saturation
+        anchor: golden-signals/saturation
+        rationale: >
+          Saturation (CPU, memory, thread/connection pools, queue depth)
+          predicts imminent latency and error problems; alerting on it buys
+          lead time before caller impact.
+        absence_severity: medium
+        satisfied_by:
+          any:
+            - kind: metric_pattern
+              pattern: '(?i)(cpu|memory|mem[._]|heap|thread[._]?pool|queue[._]?(depth|length)|utilization|saturation)'
+
+  # ───────────────────────────────────────────────────────────────
+  - id: socket-connections
+    description: >
+      Service holding long-lived TCP/socket connections — connection pools
+      to databases or brokers, or persistent client sockets. Failure modes
+      are pool exhaustion and silent connection death rather than
+      per-request errors.
+    applies_when:
+      any:
+        - kind: signal_class
+          equals: connection_pool
+          strength: strong
+        - kind: monitor_type
+          in: [tcp_check, port_check]
+          strength: strong
+        - kind: tag
+          equals: "alertlint:archetype=socket-connections"
+          strength: strong
+        - kind: metric_pattern
+          pattern: '(?i)(^|[._])(hikari|pgbouncer|jdbc|odbc)([._]|$)|connections?[._](active|idle|open|count|max|wait)'
+          strength: strong
+    required_signals:
+      - id: connection-pool
+        anchor: golden-signals/saturation
+        rationale: >
+          Pool exhaustion is the dominant failure mode for connection-holding
+          services and manifests as a cliff, not a slope; alerting on pool
+          utilization/wait is the only pre-cliff warning available.
+        absence_severity: high
+        satisfied_by:
+          any:
+            - kind: metric_pattern
+              pattern: '(?i)(pool[._]?(usage|utilization|active|pending|wait|exhaust)|connections?[._](active|wait|pending|max))'
+      - id: liveness
+        anchor: liveness
+        rationale: >
+          A long-lived socket can be dead without producing request errors
+          (half-open connections, silent broker drop); an explicit
+          liveness/reachability check is the only signal that catches this
+          class of failure.
+        absence_severity: high
+        satisfied_by:
+          any:
+            - kind: monitor_type
+              in: [tcp_check, port_check, heartbeat]
+            - kind: metric_pattern
+              pattern: '(?i)(liveness|heartbeat|keep[._]?alive|reachab|connection[._]?(up|alive|status))'
+
+  # ───────────────────────────────────────────────────────────────
+  - id: business-transactions
+    description: >
+      Service whose primary output is completed business transactions
+      (orders, payments, settlements, transfers). Technical health metrics
+      can be green while the business function silently fails; coverage
+      must therefore include business-outcome signals.
+    applies_when:
+      any:
+        - kind: tag
+          equals: "alertlint:archetype=business-transactions"
+          strength: strong
+        - kind: metric_pattern
+          pattern: '(?i)(^|[._])(order|payment|transaction|txn|checkout|settlement|transfer|invoice)s?[._]'
+          strength: weak   # custom metrics have no canonical names; path A is
+                           # deliberately low-confidence here — see §4 and
+                           # skill-integration.md for the path-C escalation
+    required_signals:
+      - id: success-rate
+        anchor: golden-signals/errors
+        rationale: >
+          Transaction success ratio is the business-level error signal; HTTP
+          error rate does not capture transactions that complete technically
+          but fail commercially (declines, validation rejects, partner
+          failures).
+        absence_severity: high
+        satisfied_by:
+          any:
+            - kind: metric_pattern
+              pattern: '(?i)(success[._]?(rate|ratio|pct)|(fail(ure|ed)?|decline|reject)[._]?(rate|ratio|count))'
+      - id: volume-anomaly
+        anchor: golden-signals/traffic
+        rationale: >
+          A transaction flow that quietly drops to zero (upstream outage,
+          bad deploy, feed stoppage) produces no errors at all; only a
+          volume/anomaly alert catches "the business stopped."
+        absence_severity: high
+        satisfied_by:
+          any:
+            - kind: monitor_type
+              in: [anomaly, outlier, forecast]
+            - kind: metric_pattern
+              pattern: '(?i)(volume|count|rate|throughput)'   # must co-occur with
+                                                              # applies_when biz-metric
+                                                              # match; see §3 step 5
+      - id: reconciliation-lag
+        anchor: data-integrity
+        rationale: >
+          Transactions that complete but never reconcile (ledger mismatch,
+          stuck settlement queue) are invisible to request-path alerting;
+          reconciliation lag/backlog is the canonical integrity signal for
+          money-moving flows.
+        absence_severity: medium
+        satisfied_by:
+          any:
+            - kind: metric_pattern
+              pattern: '(?i)(reconcil|settlement[._]?(lag|delay|backlog|queue)|ledger[._]?(diff|mismatch)|unmatched)'

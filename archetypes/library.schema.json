@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/davetashner/alertlint/archetypes/library.schema.json",
+  "title": "alertlint archetype library",
+  "description": "Schema for archetypes/library.yaml (docs/specs/archetype-library.md §1). Enforced in CI.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "library_version", "anchors", "archetypes"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "library_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "anchors": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+(/[a-z0-9-]+)?$" }
+    },
+    "archetypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/archetype" }
+    }
+  },
+  "$defs": {
+    "archetype": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "applies_when", "required_signals"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "description": { "type": "string", "minLength": 1 },
+        "applies_when": { "$ref": "#/$defs/combinator" },
+        "required_signals": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/requiredSignal" }
+        }
+      }
+    },
+    "requiredSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "anchor", "rationale", "absence_severity", "satisfied_by"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "anchor": { "type": "string" },
+        "rationale": { "type": "string", "minLength": 1 },
+        "absence_severity": { "enum": ["critical", "high", "medium", "low"] },
+        "satisfied_by": { "$ref": "#/$defs/combinator" }
+      }
+    },
+    "combinator": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "any": { "$ref": "#/$defs/predicateList" },
+        "all": { "$ref": "#/$defs/predicateList" },
+        "none": { "$ref": "#/$defs/predicateList" }
+      }
+    },
+    "predicateList": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "anyOf": [
+          { "$ref": "#/$defs/predicate" },
+          { "$ref": "#/$defs/combinator" }
+        ]
+      }
+    },
+    "predicate": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["kind", "equals"],
+          "properties": {
+            "kind": { "const": "signal_class" },
+            "equals": { "type": "string", "minLength": 1 },
+            "strength": { "$ref": "#/$defs/strength" }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["kind", "pattern"],
+          "properties": {
+            "kind": { "const": "metric_pattern" },
+            "pattern": { "type": "string", "minLength": 1 },
+            "strength": { "$ref": "#/$defs/strength" }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["kind", "in"],
+          "properties": {
+            "kind": { "const": "monitor_type" },
+            "in": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+            },
+            "strength": { "$ref": "#/$defs/strength" }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["kind", "equals"],
+          "properties": {
+            "kind": { "const": "tag" },
+            "equals": { "type": "string", "minLength": 1 },
+            "strength": { "$ref": "#/$defs/strength" }
+          }
+        }
+      ]
+    },
+    "strength": { "enum": ["strong", "weak"] }
+  }
+}
