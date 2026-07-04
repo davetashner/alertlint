@@ -8,8 +8,8 @@ owner: dave
 consumers: [claude-skill (primary), service-owners (secondary)]
 traceability:
   requirement_id_prefix: REQ
-  spec_ready: false            # flip true once open decisions D-1..D-4 are resolved
-last_updated: 2026-07-04
+  spec_ready: true             # D-1..D-4 resolved by ADRs 0001-0004
+last_updated: 2026-07-04   # D-1..D-4 ratified
 ---
 
 # Alert Analysis Skill + CLI — Initial Requirements (v0.1)
@@ -241,20 +241,20 @@ Three sub-scores, computed deterministically by the CLI from behavior signals.
 
 ## 14. Open architecture decisions (resolve before spec_ready)
 
-These are the load-bearing forks the requirements deliberately leave open.
+These load-bearing forks were deliberately left open in v0.1; all four are now resolved by the linked decision records.
 
-- `D-1` **Fleet vs laptop scope.** Recommendation: per-service atomic scoring +
+- `D-1` **Fleet vs laptop scope.** *Resolved by [ADR 0001](../decision-records/0001-fleet-vs-laptop-scope.md).* Recommendation: per-service atomic scoring +
   separate aggregation layer; v1 worklist is team-scoped (caller's reachable
   services), fleet-scope arrives with an optional later central deployment. Fixed
   priority formula either way. — *needs ratification.*
-- `D-2` **Identity resolution robustness.** How much CMDB tagging discipline
+- `D-2` **Identity resolution robustness.** *Resolved by [ADR 0002](../decision-records/0002-identity-resolution-strategy.md).* How much CMDB tagging discipline
   actually exists across Datadog/PD/etc.? Determines whether v1 must *bootstrap*
   significant mapping (heuristics, tag conventions, fuzzy match) or can assume
   clean CI references.
-- `D-3` **Deterministic/inference boundary.** Exactly which noise/threshold rules
+- `D-3` **Deterministic/inference boundary.** *Resolved by [ADR 0003](../decision-records/0003-deterministic-inference-boundary.md).* Exactly which noise/threshold rules
   are deterministic CLI logic vs. agent judgment. Draft split above; needs a
   concrete rule-by-rule pass.
-- `D-4` **Adapter interface shape.** The provider-adapter contract for the three
+- `D-4` **Adapter interface shape.** *Resolved by [ADR 0004](../decision-records/0004-provider-adapter-interface.md).* The provider-adapter contract for the three
   data classes (config, history, action) that keeps the scoring core
   vendor-agnostic. Blocks any parser work.
 
