@@ -23,7 +23,7 @@ The chain is: **requirement → spec → decision records → implementation.**
 
 | Doc | Title | Status |
 |-----|-------|--------|
-| [0001](0001-initial-requirements.md) | Alert Analysis Skill + CLI — Initial Requirements (v0.1) | Draft — blocked on decisions D-1..D-4 |
+| [0001](0001-initial-requirements.md) | Alert Analysis Skill + CLI — Initial Requirements (v0.1) | Accepted — D-1..D-4 ratified (ADRs 0001-0004), specs drafted |
 
 ## Coverage
 
@@ -31,16 +31,16 @@ Coverage is tracked per requirement category; specs list the individual IDs they
 
 | Category | Scope | Covered by spec(s) |
 |----------|-------|--------------------|
-| REQ-GOAL / REQ-NG | Goals and non-goals | — |
-| REQ-ARCH | CLI/skill division of labor | — |
-| REQ-ID | Canonical identity (CMDB CI) and join problem | — |
-| REQ-SRC | Data-source tiers and provider adapters | — |
-| REQ-SCORE | Scoring model and priority ranking | — |
-| REQ-NOISE | Noise inference and disposition taxonomy | — |
-| REQ-CRIT | Criticality and normalization | — |
-| REQ-COV | Coverage and archetype library | — |
-| REQ-THRESH | Threshold quality (behavior-inferred v1) | — |
-| REQ-HIST | History window and cold-start handling | — |
-| REQ-OUT | Per-service JSON output contract | — |
-| REQ-EXEC | Execution and auth model | — |
-| REQ-REC | Recommendation levels A/B/C | — |
+| REQ-GOAL / REQ-NG | Goals and non-goals | [scoring-engine](../specs/scoring-engine.md), [skill-integration](../specs/skill-integration.md) |
+| REQ-ARCH | CLI/skill division of labor | [skill-integration](../specs/skill-integration.md) |
+| REQ-ID | Canonical identity (CMDB CI) and join problem | [identity-resolution](../specs/identity-resolution.md) |
+| REQ-SRC | Data-source tiers and provider adapters | [provider-adapters](../specs/provider-adapters.md) |
+| REQ-SCORE | Scoring model and priority ranking | [scoring-engine](../specs/scoring-engine.md) |
+| REQ-NOISE | Noise inference and disposition taxonomy | [scoring-engine](../specs/scoring-engine.md), [provider-adapters](../specs/provider-adapters.md) |
+| REQ-CRIT | Criticality and normalization | [scoring-engine](../specs/scoring-engine.md), [identity-resolution](../specs/identity-resolution.md) |
+| REQ-COV | Coverage and archetype library | [archetype-library](../specs/archetype-library.md) |
+| REQ-THRESH | Threshold quality (behavior-inferred v1) | [scoring-engine](../specs/scoring-engine.md) |
+| REQ-HIST | History window and cold-start handling | [scoring-engine](../specs/scoring-engine.md), [provider-adapters](../specs/provider-adapters.md) |
+| REQ-OUT | Per-service JSON output contract | [output-contract](../specs/output-contract.md) |
+| REQ-EXEC | Execution and auth model | [output-contract](../specs/output-contract.md) |
+| REQ-REC | Recommendation levels A/B/C | [skill-integration](../specs/skill-integration.md), [output-contract](../specs/output-contract.md) |
