@@ -7,6 +7,7 @@ import (
 	"iter"
 
 	"github.com/davetashner/alertlint/internal/adapter"
+	"github.com/davetashner/alertlint/internal/identity"
 	"github.com/davetashner/alertlint/internal/model"
 )
 
@@ -18,6 +19,7 @@ type Provider struct {
 	Configs   []model.AlertConfig
 	Events    []model.AlertEvent
 	Responses []model.ResponseRecord
+	CIs       []identity.CI
 	// Err, when non-nil, is yielded after the records to simulate a pull
 	// that fails partway: callers must abort that source's contribution.
 	Err error
@@ -47,6 +49,11 @@ func (p *Provider) FetchEvents(adapter.Scope, adapter.TimeWindow) iter.Seq2[mode
 // FetchResponses implements adapter.ActionProvider.
 func (p *Provider) FetchResponses(adapter.Scope, adapter.TimeWindow) iter.Seq2[model.ResponseRecord, error] {
 	return yieldAll(p.Responses, p.Err)
+}
+
+// FetchCIs implements adapter.CIProvider.
+func (p *Provider) FetchCIs(adapter.Scope, adapter.TimeWindow) iter.Seq2[identity.CI, error] {
+	return yieldAll(p.CIs, p.Err)
 }
 
 func yieldAll[T any](records []T, failWith error) iter.Seq2[T, error] {

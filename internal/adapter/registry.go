@@ -13,6 +13,7 @@ type Capabilities struct {
 	Config  bool
 	History bool
 	Action  bool
+	CI      bool
 }
 
 // Registry holds registered providers. Registration is compile-time wiring:
@@ -32,7 +33,7 @@ func NewRegistry() *Registry {
 // data-class interface; duplicate ids are a programming error.
 func (r *Registry) Register(p Provider) error {
 	caps := CapabilitiesOf(p)
-	if !caps.Config && !caps.History && !caps.Action {
+	if !caps.Config && !caps.History && !caps.Action && !caps.CI {
 		return fmt.Errorf("adapter %q implements no data-class interface", p.ProviderID())
 	}
 	r.mu.Lock()
@@ -104,10 +105,24 @@ func (r *Registry) ActionProviders() []ActionProvider {
 	return out
 }
 
+// CIProviders returns registered adapters that serve the CMDB CI
+// inventory, ordered by provider id.
+func (r *Registry) CIProviders() []CIProvider {
+	var out []CIProvider
+	for _, id := range r.IDs() {
+		p, _ := r.Get(id)
+		if cp, ok := p.(CIProvider); ok {
+			out = append(out, cp)
+		}
+	}
+	return out
+}
+
 // CapabilitiesOf reports which data-class interfaces p satisfies.
 func CapabilitiesOf(p Provider) Capabilities {
 	_, config := p.(ConfigProvider)
 	_, history := p.(HistoryProvider)
 	_, action := p.(ActionProvider)
-	return Capabilities{Config: config, History: history, Action: action}
+	_, ci := p.(CIProvider)
+	return Capabilities{Config: config, History: history, Action: action, CI: ci}
 }

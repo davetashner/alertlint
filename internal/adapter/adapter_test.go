@@ -8,6 +8,7 @@ import (
 	"github.com/davetashner/alertlint/internal/adapter"
 	"github.com/davetashner/alertlint/internal/adapter/adaptertest"
 	"github.com/davetashner/alertlint/internal/adapter/fake"
+	"github.com/davetashner/alertlint/internal/identity"
 	"github.com/davetashner/alertlint/internal/model"
 )
 
@@ -52,6 +53,7 @@ func fullFake() *fake.Provider {
 			Disposition:   model.DispositionNoAction,
 			LinkedRecords: []model.LinkedRecord{},
 		}},
+		CIs: []identity.CI{{ID: "CI001", Name: "checkout-api", Status: "operational"}},
 	}
 }
 
@@ -67,8 +69,8 @@ func TestRegistryCapabilityDiscovery(t *testing.T) {
 	}
 
 	caps := adapter.CapabilitiesOf(full)
-	if !caps.Config || !caps.History || !caps.Action {
-		t.Errorf("full fake should satisfy all three interfaces: %+v", caps)
+	if !caps.Config || !caps.History || !caps.Action || !caps.CI {
+		t.Errorf("full fake should satisfy all four interfaces: %+v", caps)
 	}
 	if got := len(r.ConfigProviders()); got != 1 {
 		t.Errorf("ConfigProviders = %d, want 1", got)
@@ -78,6 +80,9 @@ func TestRegistryCapabilityDiscovery(t *testing.T) {
 	}
 	if got := len(r.ActionProviders()); got != 1 {
 		t.Errorf("ActionProviders = %d, want 1", got)
+	}
+	if got := len(r.CIProviders()); got != 1 {
+		t.Errorf("CIProviders = %d, want 1", got)
 	}
 }
 

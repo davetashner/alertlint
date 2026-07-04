@@ -104,9 +104,9 @@ criticality_tier: 1              # null when absent in the CMDB
 status: operational              # operational | retired | ...
 ```
 
-Whether this arrives via a fourth narrow provider interface or an extension of
-the ServiceNow adapter is deferred to
-[provider-adapters.md](provider-adapters.md) (see Open questions).
+This arrives via a **fourth narrow provider interface, `CIProvider`**
+(`internal/adapter/ci_provider.go`), implemented by the ServiceNow vendor
+module in v1 — resolved from this spec's former open question.
 
 **Convention rules file** and **confirmed-mappings file** — both described
 below.
@@ -508,11 +508,9 @@ this spec does not relitigate them. Spec-level alternatives:
 
 ## Open questions
 
-- **CI inventory access shape.** Fourth narrow provider interface
-  (`CiProvider`) vs. an extension of the ServiceNow adapter — ADR 0004 defined
-  three interfaces for the three data classes and the CI inventory fits none.
-  Owner: dave; resolve in [provider-adapters.md](provider-adapters.md) before
-  adapter work starts.
+- ~~CI inventory access shape~~ — resolved: a fourth narrow interface
+  `CIProvider` (uniform capability discovery, injectable in tests, CMDB not
+  hard-wired to ServiceNow); the ServiceNow module is the v1 implementer.
 - **Org tier scale and CMDB field names.** How many criticality tiers the org's
   CMDB uses, which field carries the tier, which field is the canonical CI
   name, and whether aliases exist — all org-specific facts needed to set
