@@ -1,0 +1,123 @@
+{
+  "service_state": "scoreable",
+  "tier_key": "tier1",
+  "tier_source": "cmdb",
+  "alert_states": {
+    "dormant-mature": "dormant_healthy",
+    "healthy-actioned": "scoreable",
+    "noisy-no-action": "scoreable",
+    "self-healing-maybe": "scoreable",
+    "too-new": "insufficient_data"
+  },
+  "alert_noise": [
+    {
+      "alert_id": "noisy-no-action",
+      "noise_ratio": 0.8653846153846153,
+      "has_ratio": true,
+      "weighted_noise_fires": 4.5,
+      "counts": {
+        "noise": 5,
+        "actionable": 1,
+        "unclear": 0,
+        "unclassified": 0
+      },
+      "finding": {
+        "alert_id": "noisy-no-action",
+        "noise_ratio": 0.8653846153846153,
+        "confidence": 0.8999999999999999,
+        "band": "high",
+        "low_confidence": false,
+        "counts": {
+          "noise": 5,
+          "actionable": 1,
+          "unclear": 0,
+          "unclassified": 0
+        }
+      }
+    },
+    {
+      "alert_id": "healthy-actioned",
+      "noise_ratio": 0,
+      "has_ratio": true,
+      "weighted_noise_fires": 0,
+      "counts": {
+        "noise": 0,
+        "actionable": 3,
+        "unclear": 0,
+        "unclassified": 0
+      }
+    },
+    {
+      "alert_id": "self-healing-maybe",
+      "noise_ratio": 1,
+      "has_ratio": true,
+      "weighted_noise_fires": 4.8999999999999995,
+      "counts": {
+        "noise": 14,
+        "actionable": 0,
+        "unclear": 0,
+        "unclassified": 0
+      },
+      "finding": {
+        "alert_id": "self-healing-maybe",
+        "noise_ratio": 1,
+        "confidence": 0.35000000000000003,
+        "band": "low",
+        "low_confidence": true,
+        "counts": {
+          "noise": 14,
+          "actionable": 0,
+          "unclear": 0,
+          "unclassified": 0
+        }
+      }
+    }
+  ],
+  "threshold_findings": [
+    {
+      "alert_id": "self-healing-maybe",
+      "rule_id": "TH-4",
+      "severity": "high",
+      "confidence": 0.7,
+      "band": "medium",
+      "low_confidence": false,
+      "rationale": "every classified fire in the window was noise — the alert provides no operational value as tuned",
+      "evidence": {
+        "fires_per_week": 1.0888888888888888,
+        "no_action_ratio": 1,
+        "p50_auto_resolve_minutes": 4,
+        "burst_days": 1,
+        "max_fires_in_one_day": 6,
+        "classified_fire_count": 14
+      }
+    }
+  ],
+  "noise": {
+    "value": 63.44444444444446,
+    "available": true
+  },
+  "coverage": {
+    "value": 66.66666666666667,
+    "available": true
+  },
+  "threshold": {
+    "value": 66.66666666666667,
+    "available": true
+  },
+  "composite": {
+    "composite": 65.21666666666668,
+    "available": true,
+    "partial_score": false,
+    "configured_weights": {
+      "Noise": 45,
+      "Coverage": 30,
+      "Threshold": 25
+    },
+    "effective_weights": {
+      "Noise": 45,
+      "Coverage": 30,
+      "Threshold": 25
+    }
+  },
+  "priority_score": 69.56666666666663
+}

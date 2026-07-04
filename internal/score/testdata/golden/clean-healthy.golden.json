@@ -1,0 +1,51 @@
+{
+  "service_state": "scoreable",
+  "tier_key": "tier2",
+  "tier_source": "cmdb",
+  "alert_states": {
+    "well-tuned": "scoreable"
+  },
+  "alert_noise": [
+    {
+      "alert_id": "well-tuned",
+      "noise_ratio": 0,
+      "has_ratio": true,
+      "weighted_noise_fires": 0,
+      "counts": {
+        "noise": 0,
+        "actionable": 3,
+        "unclear": 0,
+        "unclassified": 0
+      }
+    }
+  ],
+  "threshold_findings": null,
+  "noise": {
+    "value": 100,
+    "available": true
+  },
+  "coverage": {
+    "value": 100,
+    "available": true
+  },
+  "threshold": {
+    "value": 100,
+    "available": true
+  },
+  "composite": {
+    "composite": 100,
+    "available": true,
+    "partial_score": false,
+    "configured_weights": {
+      "Noise": 45,
+      "Coverage": 30,
+      "Threshold": 25
+    },
+    "effective_weights": {
+      "Noise": 45,
+      "Coverage": 30,
+      "Threshold": 25
+    }
+  },
+  "priority_score": 0
+}

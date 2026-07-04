@@ -1,0 +1,15 @@
+{
+  "criticality_tier": 2,
+  "alerts": [
+    {
+      "id": "well-tuned",
+      "created_days_before_end": 365,
+      "fires": [
+        { "day_offset": 15, "acked_after_min": 5, "closed_after_min": 55, "linked_kind": "change" },
+        { "day_offset": 45, "acked_after_min": 8, "closed_after_min": 70, "disposition": "action_taken" },
+        { "day_offset": 75, "acked_after_min": 2, "closed_after_min": 40, "linked_kind": "incident" }
+      ]
+    }
+  ],
+  "archetype_signals": [ { "applies": true, "satisfied": [true, true, true] } ]
+}

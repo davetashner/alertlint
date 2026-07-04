@@ -1,0 +1,39 @@
+{
+  "service_state": "dormant_healthy",
+  "tier_key": "tier3",
+  "tier_source": "cmdb",
+  "alert_states": {
+    "quiet-one": "dormant_healthy",
+    "quiet-two": "dormant_healthy"
+  },
+  "alert_noise": null,
+  "threshold_findings": null,
+  "noise": {
+    "value": 0,
+    "available": false
+  },
+  "coverage": {
+    "value": 0,
+    "available": false
+  },
+  "threshold": {
+    "value": 0,
+    "available": false
+  },
+  "composite": {
+    "composite": 0,
+    "available": false,
+    "partial_score": false,
+    "configured_weights": {
+      "Noise": 0,
+      "Coverage": 0,
+      "Threshold": 0
+    },
+    "effective_weights": {
+      "Noise": 0,
+      "Coverage": 0,
+      "Threshold": 0
+    }
+  },
+  "priority_score": null
+}

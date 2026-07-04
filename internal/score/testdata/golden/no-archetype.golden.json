@@ -1,0 +1,80 @@
+{
+  "service_state": "scoreable",
+  "tier_key": "tier3",
+  "tier_source": "default",
+  "alert_states": {
+    "orphan-noisy": "scoreable"
+  },
+  "alert_noise": [
+    {
+      "alert_id": "orphan-noisy",
+      "noise_ratio": 1,
+      "has_ratio": true,
+      "weighted_noise_fires": 2.7,
+      "counts": {
+        "noise": 3,
+        "actionable": 0,
+        "unclear": 0,
+        "unclassified": 0
+      },
+      "finding": {
+        "alert_id": "orphan-noisy",
+        "noise_ratio": 1,
+        "confidence": 0.9,
+        "band": "high",
+        "low_confidence": false,
+        "counts": {
+          "noise": 3,
+          "actionable": 0,
+          "unclear": 0,
+          "unclassified": 0
+        }
+      }
+    }
+  ],
+  "threshold_findings": [
+    {
+      "alert_id": "orphan-noisy",
+      "rule_id": "TH-4",
+      "severity": "high",
+      "confidence": 0.7,
+      "band": "medium",
+      "low_confidence": false,
+      "rationale": "every classified fire in the window was noise — the alert provides no operational value as tuned",
+      "evidence": {
+        "fires_per_week": 0.23333333333333334,
+        "no_action_ratio": 1,
+        "max_fires_in_one_day": 1,
+        "classified_fire_count": 3
+      }
+    }
+  ],
+  "noise": {
+    "value": 95.8,
+    "available": true
+  },
+  "coverage": {
+    "value": 0,
+    "available": false
+  },
+  "threshold": {
+    "value": 0,
+    "available": true
+  },
+  "composite": {
+    "composite": 61.58571428571429,
+    "available": true,
+    "partial_score": true,
+    "configured_weights": {
+      "Noise": 45,
+      "Coverage": 30,
+      "Threshold": 25
+    },
+    "effective_weights": {
+      "Noise": 64.28571428571429,
+      "Coverage": 0,
+      "Threshold": 35.714285714285715
+    }
+  },
+  "priority_score": 38.41428571428571
+}

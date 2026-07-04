@@ -1,0 +1,56 @@
+{
+  "criticality_tier": 1,
+  "alerts": [
+    {
+      "id": "noisy-no-action",
+      "created_days_before_end": 200,
+      "fires": [
+        { "day_offset": 5, "closed_after_min": 40, "disposition": "no_action" },
+        { "day_offset": 12, "closed_after_min": 35, "disposition": "no_action" },
+        { "day_offset": 30, "closed_after_min": 50, "disposition": "no_action" },
+        { "day_offset": 44, "closed_after_min": 45, "disposition": "no_action" },
+        { "day_offset": 61, "closed_after_min": 30, "disposition": "no_action" },
+        { "day_offset": 80, "acked_after_min": 10, "closed_after_min": 90, "disposition": "action_taken" }
+      ]
+    },
+    {
+      "id": "healthy-actioned",
+      "created_days_before_end": 400,
+      "fires": [
+        { "day_offset": 10, "acked_after_min": 4, "closed_after_min": 60, "linked_kind": "change" },
+        { "day_offset": 40, "acked_after_min": 6, "closed_after_min": 45, "disposition": "action_taken" },
+        { "day_offset": 70, "acked_after_min": 3, "closed_after_min": 30, "linked_kind": "incident" }
+      ]
+    },
+    {
+      "id": "self-healing-maybe",
+      "created_days_before_end": 300,
+      "fires": [
+        { "day_offset": 20, "hour_offset": 1, "auto_resolved": true, "resolve_after_min": 4 },
+        { "day_offset": 20, "hour_offset": 5, "auto_resolved": true, "resolve_after_min": 6 },
+        { "day_offset": 20, "hour_offset": 9, "auto_resolved": true, "resolve_after_min": 3 },
+        { "day_offset": 20, "hour_offset": 13, "auto_resolved": true, "resolve_after_min": 5 },
+        { "day_offset": 20, "hour_offset": 17, "auto_resolved": true, "resolve_after_min": 4 },
+        { "day_offset": 20, "hour_offset": 21, "auto_resolved": true, "resolve_after_min": 5 },
+        { "day_offset": 21, "hour_offset": 2, "auto_resolved": true, "resolve_after_min": 4 },
+        { "day_offset": 21, "hour_offset": 6, "auto_resolved": true, "resolve_after_min": 6 },
+        { "day_offset": 21, "hour_offset": 10, "auto_resolved": true, "resolve_after_min": 3 },
+        { "day_offset": 21, "hour_offset": 14, "auto_resolved": true, "resolve_after_min": 5 },
+        { "day_offset": 22, "hour_offset": 3, "auto_resolved": true, "resolve_after_min": 4 },
+        { "day_offset": 22, "hour_offset": 8, "auto_resolved": true, "resolve_after_min": 6 },
+        { "day_offset": 22, "hour_offset": 12, "auto_resolved": true, "resolve_after_min": 4 },
+        { "day_offset": 22, "hour_offset": 16, "auto_resolved": true, "resolve_after_min": 5 }
+      ]
+    },
+    { "id": "dormant-mature", "created_days_before_end": 500, "fires": [] },
+    {
+      "id": "too-new",
+      "created_days_before_end": 5,
+      "fires": [ { "day_offset": 88, "closed_after_min": 20, "disposition": "no_action" } ]
+    }
+  ],
+  "archetype_signals": [
+    { "applies": true, "satisfied": [true, true, false] },
+    { "applies": false, "satisfied": [] }
+  ]
+}

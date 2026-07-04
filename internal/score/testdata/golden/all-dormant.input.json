@@ -1,0 +1,8 @@
+{
+  "criticality_tier": 3,
+  "alerts": [
+    { "id": "quiet-one", "created_days_before_end": 400, "fires": [] },
+    { "id": "quiet-two", "created_days_before_end": 250, "fires": [] }
+  ],
+  "archetype_signals": [ { "applies": true, "satisfied": [true, true] } ]
+}
