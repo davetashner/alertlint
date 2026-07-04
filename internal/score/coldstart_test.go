@@ -32,10 +32,10 @@ func TestAlertState(t *testing.T) {
 	c := coldCfg(t) // min_alert_age_days: 14, min_fires_to_score: 3
 	w := coldWindow()
 	cases := []struct {
-		name             string
-		alert            model.AlertConfig
+		name              string
+		alert             model.AlertConfig
 		classified, total int
-		want             AnalysisState
+		want              AnalysisState
 	}{
 		{"young alert always insufficient (REQ-HIST-003)", alertCreated(5), 10, 12, StateInsufficientData},
 		{"young alert with zero fires still insufficient, not dormant", alertCreated(5), 0, 0, StateInsufficientData},
