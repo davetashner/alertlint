@@ -1,0 +1,60 @@
+# alertlint scoring configuration, version 1.
+#
+# Every constant the scoring engine uses lives here (docs/specs/scoring-engine.md).
+# Changing ANY value requires bumping scoring_config_version: two runs with the
+# same version and input must be byte-identical (REQ-SCORE-007). The version is
+# stamped into every per-service output document.
+#
+# Defaults are the spec's proposed starting points, pending calibration against
+# a real pilot corpus (spec Open questions).
+
+scoring_config_version: 1
+
+# Sub-score weights (REQ-SCORE-004). Noise carries the most weight in v1
+# because alert fatigue is the presenting problem.
+weights: { noise: 45, coverage: 30, threshold: 25 }
+
+# Default analysis window (REQ-HIST-001).
+window_days: 90
+
+# Cold-start gating (REQ-HIST-002..004) — evaluated before any scoring.
+cold_start:
+  min_alert_age_days: 14 # younger => insufficient-data (REQ-HIST-003)
+  min_fires_to_score: 3 # fewer classified fires => insufficient-data
+
+# Noise classification and scoring (REQ-NOISE-001..004).
+noise:
+  fast_auto_resolve_minutes: 10
+  never_acked_grace_minutes: 30
+  high_reassignment_count: 3
+  tier_noise_budget_per_week: { tier1: 2.0, tier2: 3.0, tier3: 5.0, tier4: 8.0 }
+
+# Behavior-inferred threshold heuristics TH-1..TH-4 (REQ-THRESH-001).
+threshold:
+  chatty_fires_per_week: 10
+  chatty_no_action_ratio: 0.70
+  flap_p50_auto_resolve_minutes: 5
+  flap_fires_per_week: 3
+  burst_fires_per_day: 6
+  burst_min_days: 3
+
+# Criticality-weighted priority (REQ-SCORE-005, REQ-CRIT-001..003).
+criticality:
+  multiplier: { tier1: 2.0, tier2: 1.5, tier3: 1.0, tier4: 0.7 }
+  default_tier: tier3 # for unknown criticality (REQ-CRIT-003)
+
+# Per-rule confidence values (REQ-NOISE-004).
+confidence:
+  disposition_no_action: 0.90
+  linked_change_or_incident: 0.90
+  acked_manual_close: 0.70
+  ambiguity_default: 0.35
+
+# Determinations at/below this are tagged low_confidence — the designed
+# CLI -> skill handoff seam (ADR 0003).
+low_confidence_ceiling: 0.50
+
+# Numeric confidence -> contract band mapping (docs/specs/output-contract.md):
+# >= high_floor -> "high"; <= low_confidence_ceiling -> "low"; else "medium".
+confidence_bands:
+  high_floor: 0.85
