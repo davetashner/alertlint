@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "source": { "provider": "servicenow", "tenant": "instance-prod" },
+  "source_ref": {
+    "kind": "incident",
+    "native_id": "INC0451923",
+    "url": "https://example.service-now.com/incident.do?sys_id=abc123"
+  },
+  "identity_hints": {
+    "tags": {},
+    "names": ["checkout-api"],
+    "external_refs": [
+      { "system": "pagerduty", "native_id": "Q1ABC2DEF3GHI4" }
+    ]
+  },
+  "event_ref": { "provider": "pagerduty", "native_id": "Q1ABC2DEF3GHI4" },
+  "acked_at": null,
+  "closed_at": "2026-05-14T04:05:02Z",
+  "disposition": "no_action",
+  "disposition_native": "Closed/Resolved - No Action Taken",
+  "reassignment_count": 2,
+  "actor_ref": "sys_user:7f3a09",
+  "linked_records": []
+}

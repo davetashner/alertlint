@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "source": { "provider": "pagerduty", "tenant": "acct-primary" },
+  "source_ref": {
+    "kind": "incident",
+    "native_id": "Q1ABC2DEF3GHI4",
+    "url": "https://example.pagerduty.com/incidents/Q1ABC2DEF3GHI4"
+  },
+  "identity_hints": {
+    "tags": {},
+    "names": ["checkout-api"],
+    "external_refs": [
+      { "system": "datadog", "native_id": "84312077" }
+    ]
+  },
+  "alert_ref": {
+    "provider": "datadog",
+    "native_id": "84312077",
+    "name": "[prod] checkout-api p95 latency high"
+  },
+  "fired_at": "2026-05-14T03:22:10Z",
+  "resolved_at": "2026-05-14T03:29:41Z",
+  "auto_resolved": true,
+  "occurrence_count": 1,
+  "severity": { "native": "high", "normalized": "high" }
+}
