@@ -1,0 +1,49 @@
+{
+  "result": [
+    {
+      "sys_id": { "display_value": "abc123", "value": "abc123" },
+      "number": { "display_value": "INC0451923", "value": "INC0451923" },
+      "short_description": { "display_value": "checkout-api p95 latency high", "value": "checkout-api p95 latency high" },
+      "opened_at": { "display_value": "2026-05-14 03:22:30", "value": "2026-05-14 03:22:30" },
+      "resolved_at": { "display_value": "2026-05-14 04:05:02", "value": "2026-05-14 04:05:02" },
+      "closed_at": { "display_value": "2026-05-14 04:05:02", "value": "2026-05-14 04:05:02" },
+      "work_start": { "display_value": "", "value": "" },
+      "close_code": { "display_value": "Closed/Resolved - No Action Taken", "value": "Closed/Resolved - No Action Taken" },
+      "severity": { "display_value": "2 - High", "value": "2" },
+      "reassignment_count": { "display_value": "2", "value": "2" },
+      "assigned_to": { "display_value": "Dana Ops", "value": "7f3a09" },
+      "cmdb_ci": { "display_value": "checkout-api", "value": "CI0007777" },
+      "correlation_id": { "display_value": "Q1ABC2DEF3GHI4", "value": "Q1ABC2DEF3GHI4" }
+    },
+    {
+      "sys_id": { "display_value": "def456", "value": "def456" },
+      "number": { "display_value": "INC0452001", "value": "INC0452001" },
+      "short_description": { "display_value": "payments-api settlement backlog", "value": "payments-api settlement backlog" },
+      "opened_at": { "display_value": "2026-05-20 11:00:00", "value": "2026-05-20 11:00:00" },
+      "resolved_at": { "display_value": "2026-05-20 15:30:00", "value": "2026-05-20 15:30:00" },
+      "closed_at": { "display_value": "", "value": "" },
+      "work_start": { "display_value": "2026-05-20 11:15:00", "value": "2026-05-20 11:15:00" },
+      "close_code": { "display_value": "Solved (Permanently)", "value": "Solved (Permanently)" },
+      "severity": { "display_value": "1 - Critical", "value": "1" },
+      "reassignment_count": { "display_value": "0", "value": "0" },
+      "assigned_to": { "display_value": "Sam SRE", "value": "9b2c11" },
+      "cmdb_ci": { "display_value": "payments-api", "value": "CI0001234" },
+      "correlation_id": { "display_value": "", "value": "" }
+    },
+    {
+      "sys_id": { "display_value": "ghi789", "value": "ghi789" },
+      "number": { "display_value": "INC0452500", "value": "INC0452500" },
+      "short_description": { "display_value": "billing nightly job failed", "value": "billing nightly job failed" },
+      "opened_at": { "display_value": "2026-06-01 02:00:00", "value": "2026-06-01 02:00:00" },
+      "resolved_at": { "display_value": "", "value": "" },
+      "closed_at": { "display_value": "", "value": "" },
+      "work_start": { "display_value": "", "value": "" },
+      "close_code": { "display_value": "Fixed Per Runbook 7", "value": "Fixed Per Runbook 7" },
+      "severity": { "display_value": "3 - Moderate", "value": "3" },
+      "reassignment_count": { "display_value": "", "value": "" },
+      "assigned_to": { "display_value": "", "value": "" },
+      "cmdb_ci": { "display_value": "", "value": "" },
+      "correlation_id": { "display_value": "", "value": "" }
+    }
+  ]
+}
