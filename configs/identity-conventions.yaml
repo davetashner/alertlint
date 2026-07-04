@@ -1,0 +1,47 @@
+# alertlint identity convention rules (docs/specs/identity-resolution.md,
+# strategy 3). Deterministic, org-specific artifact→CI resolution rules.
+#
+# These starter rules are the spec's format examples — REPLACE with rules
+# authored for your estate. Rules run in file order; the first rule whose
+# transformed hint equal-matches exactly one CI wins. A multi-CI match is an
+# ambiguous_convention_match finding, never a mapping.
+#
+# Each rule carries inline `tests` fixtures; CI fails if any fixture breaks,
+# so rule edits stay honest. The file's version + content hash go into run
+# metadata for reproducibility.
+
+version: 1
+
+rules:
+  - id: dd-service-tag
+    description: "Datadog service tag equals CMDB CI name"
+    source: datadog
+    match:
+      hint: tag
+      key: service
+    transform:
+      - lowercase
+      - strip_suffix: ["-prod", "-production"]
+    lookup:
+      field: name
+      also: aliases
+    confidence: 0.8
+    tests:
+      - { input: "Payments-API-PROD", expect: "payments-api" }
+      - { input: "checkout-api", expect: "checkout-api" }
+      - { input: "Billing-Production", expect: "billing" }
+
+  - id: pd-service-name
+    description: "PagerDuty service display name equals CI name"
+    source: pagerduty
+    match:
+      hint: service_name
+    transform:
+      - lowercase
+      - collapse_whitespace
+      - replace: { old: " ", new: "-" }
+    lookup:
+      field: name
+    tests:
+      - { input: "Checkout   API", expect: "checkout-api" }
+      - { input: "payments-api", expect: "payments-api" }
