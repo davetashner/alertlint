@@ -40,7 +40,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case "help", "-h", "--help":
 		fmt.Fprint(stdout, usageText)
 		return 0
-	case "analyze", "worklist", "identity":
+	case "analyze":
+		return runAnalyze(args[1:], stdout, stderr)
+	case "worklist", "identity":
 		fmt.Fprintf(stderr, "alertlint %s: not implemented yet — see docs/specs/\n", args[0])
 		return 1
 	default:
