@@ -25,9 +25,12 @@ From these it produces:
 
 ```
 docs/
-├── decision-records/   # Architecture Decision Records (ADRs)
-└── specs/              # Feature and design specifications
+├── requirements/       # What alertlint must do (REQ-NNN IDs, source of truth)
+├── specs/              # How each requirement will be implemented
+└── decision-records/   # Architecture Decision Records (ADRs) — why we chose what we chose
 ```
+
+Traceability flows requirement → spec → decision records → implementation; each spec header lists the `REQ-NNN` IDs it addresses.
 
 ## Usage
 
