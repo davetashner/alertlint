@@ -3,6 +3,8 @@
 - **Status:** Draft | In review | Approved | Shipped
 - **Date:** YYYY-MM-DD
 - **Beads issue:** alertlint-xxx
+- **Requirements:** REQ-xxx, REQ-yyy (see [docs/requirements](../requirements/))
+- **Decision records:** links to ADRs spawned by this spec, as they accumulate
 
 ## Problem
 
