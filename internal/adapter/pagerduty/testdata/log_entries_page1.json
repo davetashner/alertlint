@@ -1,0 +1,35 @@
+{
+  "log_entries": [
+    {
+      "type": "acknowledge_log_entry",
+      "created_at": "2026-05-20T11:06:30Z",
+      "agent": { "id": "PUSR42", "type": "user_reference" },
+      "incident": { "id": "Q5JKL6MNO7PQR8" }
+    },
+    {
+      "type": "reassign_log_entry",
+      "created_at": "2026-05-20T11:20:00Z",
+      "agent": { "id": "PUSR42", "type": "user_reference" },
+      "incident": { "id": "Q5JKL6MNO7PQR8" }
+    },
+    {
+      "type": "escalate_log_entry",
+      "created_at": "2026-05-20T11:40:00Z",
+      "agent": { "id": "PESC1", "type": "escalation_policy_reference" },
+      "incident": { "id": "Q5JKL6MNO7PQR8" }
+    },
+    {
+      "type": "resolve_log_entry",
+      "created_at": "2026-05-20T12:45:00Z",
+      "agent": { "id": "PUSR77", "type": "user_reference" },
+      "incident": { "id": "Q5JKL6MNO7PQR8" }
+    },
+    {
+      "type": "resolve_log_entry",
+      "created_at": "2026-05-14T03:29:41Z",
+      "agent": { "id": "PXYZ123", "type": "service_reference" },
+      "incident": { "id": "Q1ABC2DEF3GHI4" }
+    }
+  ],
+  "more": false
+}

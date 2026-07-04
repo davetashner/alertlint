@@ -1,0 +1,29 @@
+{
+  "incidents": [
+    {
+      "id": "Q1ABC2DEF3GHI4",
+      "title": "[prod] checkout-api p95 latency high",
+      "status": "resolved",
+      "urgency": "high",
+      "created_at": "2026-05-14T03:22:10Z",
+      "last_status_change_at": "2026-05-14T03:29:41Z",
+      "html_url": "https://example.pagerduty.com/incidents/Q1ABC2DEF3GHI4",
+      "service": { "id": "PXYZ123", "summary": "Checkout API" },
+      "alert_counts": { "all": 1 },
+      "last_status_change_by": { "type": "service_reference" }
+    },
+    {
+      "id": "Q5JKL6MNO7PQR8",
+      "title": "[prod] checkout-api disk saturation",
+      "status": "resolved",
+      "urgency": "high",
+      "created_at": "2026-05-20T11:02:00Z",
+      "last_status_change_at": "2026-05-20T12:45:00Z",
+      "html_url": "https://example.pagerduty.com/incidents/Q5JKL6MNO7PQR8",
+      "service": { "id": "PXYZ123", "summary": "Checkout API" },
+      "alert_counts": { "all": 3 },
+      "last_status_change_by": { "type": "user_reference" }
+    }
+  ],
+  "more": false
+}
