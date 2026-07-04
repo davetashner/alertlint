@@ -35,7 +35,7 @@ func Run(t *testing.T, p adapter.Provider, scope adapter.Scope, window adapter.T
 	}
 
 	caps := adapter.CapabilitiesOf(p)
-	if !caps.Config && !caps.History && !caps.Action {
+	if !caps.Config && !caps.History && !caps.Action && !caps.CI {
 		t.Fatal("provider satisfies no data-class interface")
 	}
 
@@ -60,6 +60,36 @@ func Run(t *testing.T, p adapter.Provider, scope adapter.Scope, window adapter.T
 			assertSameOrder(t, ids, again)
 		})
 	}
+	if cp, ok := p.(adapter.CIProvider); ok {
+		t.Run("cis", func(t *testing.T) {
+			ids := collectCIs(t, cp, scope, window)
+			again := collectCIs(t, cp, scope, window)
+			assertSameOrder(t, ids, again)
+		})
+	}
+}
+
+func collectCIs(t *testing.T, cp adapter.CIProvider, scope adapter.Scope, window adapter.TimeWindow) []string {
+	t.Helper()
+	seen := map[string]bool{}
+	var ids []string
+	for ci, err := range cp.FetchCIs(scope, window) {
+		if err != nil {
+			t.Fatalf("FetchCIs failed: %v", err)
+		}
+		if ci.ID == "" || ci.Name == "" {
+			t.Errorf("CI record must carry ci_id and name: %+v", ci)
+		}
+		if ci.Status == "" {
+			t.Errorf("%s: CI status must be present", ci.ID)
+		}
+		if seen[ci.ID] {
+			t.Errorf("%s: duplicate ci_id in one snapshot", ci.ID)
+		}
+		seen[ci.ID] = true
+		ids = append(ids, ci.ID)
+	}
+	return ids
 }
 
 func major(v string) string {
