@@ -1,0 +1,149 @@
+{
+  "contract_version": "1.0.0",
+  "identity": {
+    "ci": {
+      "id": "CI0012345",
+      "name": "payments-api",
+      "criticality_tier": 1,
+      "criticality_source": "cmdb"
+    },
+    "artifacts": [
+      {
+        "source": "datadog",
+        "kind": "alert_config",
+        "native_id": "monitor:4821337",
+        "native_name": "payments-api p99 latency high",
+        "resolution": { "method": "exact", "confidence": "high", "rule": null },
+        "analysis_state": "scored"
+      },
+      {
+        "source": "datadog",
+        "kind": "alert_config",
+        "native_id": "monitor:4821440",
+        "native_name": "payments-api disk usage",
+        "resolution": { "method": "convention", "confidence": "medium", "rule": "dd-service-tag-v3" },
+        "analysis_state": "dormant"
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "service:PX7Q2K1",
+        "native_name": "Payments API",
+        "resolution": { "method": "convention", "confidence": "medium", "rule": "pd-name-eq-ci-name" },
+        "analysis_state": null
+      },
+      {
+        "source": "servicenow",
+        "kind": "alert_event",
+        "native_id": "em_alert:pmt-api-*",
+        "native_name": null,
+        "resolution": { "method": "exact", "confidence": "high", "rule": null },
+        "analysis_state": null
+      }
+    ],
+    "mapping": {
+      "resolved_count": 14,
+      "candidate_count": 1,
+      "coverage_note": "partial",
+      "by_source": { "datadog": 9, "pagerduty": 3, "servicenow": 2 }
+    }
+  },
+  "scores": {
+    "noise": 31.5,
+    "coverage": 58.0,
+    "threshold": 44.2,
+    "composite": 42.6,
+    "criticality_tier": 1,
+    "priority_score": 86.1,
+    "inputs": { "alerts_scored": 11, "alerts_dormant": 2, "alerts_insufficient_data": 1 }
+  },
+  "findings": [
+    {
+      "id": "ald-3f9c2e71",
+      "type": "noise",
+      "severity": "high",
+      "confidence": "low",
+      "subject": { "source": "datadog", "native_id": "monitor:4821337", "signal": null },
+      "rationale": "Fired 41 times in 90d; never acked; median auto-resolve 4m; no Closed–No Action code present. Scored as noise by the ambiguity default; could be self-healing.",
+      "evidence": {
+        "fire_count": 41,
+        "window_days": 90,
+        "acked_count": 0,
+        "no_action_count": 0,
+        "auto_resolved_count": 41,
+        "median_time_to_resolve_s": 240,
+        "disposition_counts": { "auto_resolved": 41 }
+      },
+      "proposed_change": null
+    },
+    {
+      "id": "ald-88a1b0cd",
+      "type": "coverage",
+      "severity": "high",
+      "confidence": "high",
+      "subject": { "source": null, "native_id": null, "signal": "error_rate" },
+      "rationale": "Service matches the rest_api archetype (HTTP request telemetry present in Datadog) but has no error-rate alert.",
+      "evidence": {
+        "archetype": "rest_api",
+        "archetype_source": "inferred",
+        "missing_signal": "error_rate",
+        "applicability_basis": "datadog metrics trace.http.request.{hits,errors} present in window"
+      },
+      "proposed_change": null
+    },
+    {
+      "id": "ald-1d4e9f02",
+      "type": "threshold",
+      "severity": "medium",
+      "confidence": "high",
+      "subject": { "source": "datadog", "native_id": "monitor:4821337", "signal": null },
+      "rationale": "High fire frequency with 87% no-action ratio implies the threshold is too tight or the duration too short.",
+      "evidence": {
+        "fire_count": 41,
+        "window_days": 90,
+        "no_action_ratio": 0.87,
+        "current_threshold": 250,
+        "current_duration_s": 60
+      },
+      "proposed_change": {
+        "kind": "threshold_update",
+        "target": { "source": "datadog", "native_id": "monitor:4821337", "path": "options.thresholds.critical" },
+        "current": 250,
+        "proposed": 400,
+        "rationale": "p99 has sat at 320–360ms for 90d per fire-time snapshots; 250ms fires ~daily with 87% no-action.",
+        "generated_by": "skill",
+        "diff": null
+      }
+    },
+    {
+      "id": "ald-c07d5a33",
+      "type": "identity",
+      "severity": "low",
+      "confidence": "low",
+      "subject": { "source": "newrelic", "native_id": "policy:998811", "signal": null },
+      "rationale": "New Relic policy 'pmts-api-golden' has no CI reference; fuzzy match suggests this CI. Confirmation required before its data can join scoring.",
+      "evidence": {
+        "unresolved_artifact": { "source": "newrelic", "kind": "alert_config", "native_id": "policy:998811", "native_name": "pmts-api-golden" },
+        "candidates": [ { "ci_id": "CI0012345", "ci_name": "payments-api", "match_score": 0.83, "method": "fuzzy" } ],
+        "reason": "ambiguous_candidates"
+      },
+      "proposed_change": null
+    }
+  ],
+  "metadata": {
+    "run": { "timestamp": "2026-07-04T17:22:09Z", "tool_version": "0.4.2", "invocation_id": "9d2c7a1e" },
+    "window": { "start": "2026-04-05T00:00:00Z", "end": "2026-07-04T00:00:00Z", "days": 90 },
+    "config": {
+      "weights": { "noise": 45, "coverage": 30, "threshold": 25 },
+      "priority_formula_version": "1",
+      "config_hash": "sha256:1c0e7b9aa4f2d8c1"
+    },
+    "archetype_library_version": "2026.06.2",
+    "convention_ruleset_version": "2026.06.5",
+    "sources": [
+      { "source": "datadog", "adapter_version": "0.4.2", "canonical_schema_version": "1", "snapshot_key": "datadog/acme-prod/2026-04-05_2026-07-04" },
+      { "source": "pagerduty", "adapter_version": "0.4.2", "canonical_schema_version": "1", "snapshot_key": "pagerduty/acme/2026-04-05_2026-07-04" },
+      { "source": "servicenow", "adapter_version": "0.4.2", "canonical_schema_version": "1", "snapshot_key": "servicenow/acme/2026-04-05_2026-07-04" }
+    ]
+  }
+}
