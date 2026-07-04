@@ -1,0 +1,146 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"time"
+
+	"github.com/davetashner/alertlint/internal/adapter"
+	"github.com/davetashner/alertlint/internal/adapter/datadog"
+	"github.com/davetashner/alertlint/internal/adapter/pagerduty"
+	"github.com/davetashner/alertlint/internal/adapter/servicenow"
+	"github.com/davetashner/alertlint/internal/archetype"
+	"github.com/davetashner/alertlint/internal/identity"
+	"github.com/davetashner/alertlint/internal/output"
+	"github.com/davetashner/alertlint/internal/pipeline"
+	"github.com/davetashner/alertlint/internal/score"
+)
+
+// runAnalyze wires the live pipeline from flags and environment
+// credentials (REQ-EXEC-001: the caller's own credentials, no broker).
+// Adapters register only when their credentials are present, so a
+// partial-credential run analyzes what it can reach and says so.
+func runAnalyze(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("analyze", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	out := fs.String("out", "out", "output directory for per-service documents")
+	tenant := fs.String("tenant", "", "tenant identifier recorded in snapshots (required)")
+	selector := fs.String("selector", "", "provider-native narrowing filter, passed through opaquely")
+	windowDays := fs.Int("window-days", adapter.DefaultWindowDays, "analysis window length in days")
+	scoringPath := fs.String("scoring-config", "configs/scoring.yaml", "scoring config file")
+	libraryPath := fs.String("archetype-library", "archetypes/library.yaml", "archetype library file")
+	conventionsPath := fs.String("identity-conventions", "configs/identity-conventions.yaml", "identity convention rules file")
+	ciTagKeys := fs.String("ci-tag-keys", "cmdb_ci,ci_id", "comma-separated tag keys treated as explicit CI references")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if *tenant == "" {
+		fmt.Fprintln(stderr, "alertlint analyze: --tenant is required")
+		return 2
+	}
+
+	cfg, err := score.LoadConfig(*scoringPath)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	lib, err := archetype.LoadLibrary(*libraryPath)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	conv, err := identity.LoadConventions(*conventionsPath)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	registry := adapter.NewRegistry()
+	registered := 0
+	if key := os.Getenv("DD_API_KEY"); key != "" {
+		if err := registry.Register(&datadog.Adapter{APIKey: key, AppKey: os.Getenv("DD_APP_KEY")}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		registered++
+	}
+	if token := os.Getenv("PAGERDUTY_TOKEN"); token != "" {
+		if err := registry.Register(&pagerduty.Adapter{Token: token}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		registered++
+	}
+	if base := os.Getenv("SERVICENOW_URL"); base != "" {
+		if err := registry.Register(&servicenow.Adapter{
+			BaseURL: base, User: os.Getenv("SERVICENOW_USER"), Password: os.Getenv("SERVICENOW_PASSWORD"),
+		}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		registered++
+	}
+	if registered == 0 {
+		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD")
+		return 2
+	}
+
+	now := time.Now().UTC()
+	sum := sha256.Sum256([]byte(now.Format(time.RFC3339Nano) + *tenant))
+	opts := pipeline.Options{
+		Registry:   registry,
+		Scope:      adapter.Scope{Tenant: *tenant, Selector: *selector},
+		Window:     adapter.TimeWindow{Start: now.AddDate(0, 0, -*windowDays), End: now},
+		Config:     cfg,
+		Library:    lib,
+		Convention: conv,
+		Resolver:   identity.ResolverConfig{CIIDTagKeys: splitComma(*ciTagKeys)},
+		OutDir:     *out,
+		RunMeta: output.Run{
+			Timestamp:    now,
+			ToolVersion:  version,
+			InvocationID: hex.EncodeToString(sum[:])[:8],
+		},
+	}
+	res, err := pipeline.Run(opts)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "analyzed %d service(s), %d unresolved artifact(s); %d document(s) written to %s\n",
+		res.Services, res.Unresolved, len(res.Documents), *out)
+	return 0
+}
+
+func splitComma(s string) []string {
+	var out []string
+	for _, part := range splitAndTrim(s) {
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func splitAndTrim(s string) []string {
+	var out []string
+	start := 0
+	for i := 0; i <= len(s); i++ {
+		if i == len(s) || s[i] == ',' {
+			part := s[start:i]
+			for len(part) > 0 && part[0] == ' ' {
+				part = part[1:]
+			}
+			for len(part) > 0 && part[len(part)-1] == ' ' {
+				part = part[:len(part)-1]
+			}
+			out = append(out, part)
+			start = i + 1
+		}
+	}
+	return out
+}

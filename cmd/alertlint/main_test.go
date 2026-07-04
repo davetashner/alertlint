@@ -16,7 +16,7 @@ func TestRun(t *testing.T) {
 		{name: "no args shows usage", args: nil, wantCode: 2, wantErrOut: "Usage:"},
 		{name: "version", args: []string{"version"}, wantCode: 0, wantOut: version},
 		{name: "help", args: []string{"help"}, wantCode: 0, wantOut: "Usage:"},
-		{name: "analyze stub", args: []string{"analyze"}, wantCode: 1, wantErrOut: "not implemented"},
+		{name: "analyze requires tenant", args: []string{"analyze"}, wantCode: 2, wantErrOut: "--tenant is required"},
 		{name: "worklist stub", args: []string{"worklist"}, wantCode: 1, wantErrOut: "not implemented"},
 		{name: "identity stub", args: []string{"identity"}, wantCode: 1, wantErrOut: "not implemented"},
 		{name: "unknown command", args: []string{"bogus"}, wantCode: 2, wantErrOut: `unknown command "bogus"`},
