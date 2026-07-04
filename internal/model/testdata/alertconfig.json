@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "source": { "provider": "datadog", "tenant": "acct-primary" },
+  "source_ref": {
+    "kind": "monitor",
+    "native_id": "84312077",
+    "url": "https://app.datadoghq.com/monitors/84312077"
+  },
+  "identity_hints": {
+    "tags": { "service": "checkout-api", "env": "prod", "team": "payments" },
+    "names": ["checkout-api"],
+    "external_refs": [
+      { "system": "pagerduty", "native_id": "PXYZ123" }
+    ]
+  },
+  "name": "[prod] checkout-api p95 latency high",
+  "description": "Pages when p95 latency exceeds SLO threshold.",
+  "condition_raw": "avg(last_10m):p95:trace.http.request.duration{service:checkout-api,env:prod} > 2.5",
+  "threshold": 2.5,
+  "comparator": ">",
+  "duration_s": 600,
+  "severity": { "native": "P2", "normalized": "high" },
+  "routing": [
+    { "target_kind": "pagerduty_service", "target": "PXYZ123" }
+  ],
+  "status": "enabled",
+  "silenced_until": null,
+  "created_at": "2025-11-02T14:31:00Z",
+  "updated_at": "2026-03-18T09:12:44Z"
+}
