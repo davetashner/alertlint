@@ -13,3 +13,7 @@ Architecture Decision Records (ADRs) for alertlint. Each record captures one sig
 | # | Title | Status |
 |---|-------|--------|
 | [0000](0000-template.md) | Template | — |
+| [0001](0001-fleet-vs-laptop-scope.md) | Per-service atomic scoring with a separate aggregation layer | Accepted |
+| [0002](0002-identity-resolution-strategy.md) | Layered identity resolution that assumes messy tagging | Accepted |
+| [0003](0003-deterministic-inference-boundary.md) | Deterministic/inference boundary: CLI computes, skill judges | Accepted |
+| [0004](0004-provider-adapter-interface.md) | Per-data-class provider interfaces with canonical models | Accepted |
