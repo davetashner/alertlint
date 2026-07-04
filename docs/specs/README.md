@@ -11,6 +11,15 @@ Feature and design specs for alertlint. A spec describes **what** a capability d
 
 ## Index
 
-| Spec | Status |
-|------|--------|
-| _none yet_ | |
+| Spec | Scope | Status |
+|------|-------|--------|
+| [provider-adapters](provider-adapters.md) | Provider interfaces, canonical models, disposition taxonomy, snapshot cache | Draft |
+| [identity-resolution](identity-resolution.md) | Layered artifact→CI resolver, mapping files, coverage metrics | Draft |
+| [scoring-engine](scoring-engine.md) | Noise/coverage/threshold sub-scores, priority formula, cold-start states | Draft |
+| [archetype-library](archetype-library.md) | Versioned archetype→required-signal library and applicability inference | Draft |
+| [output-contract](output-contract.md) | Per-service JSON contract, finding taxonomy, aggregation/worklist | Draft |
+| [skill-integration](skill-integration.md) | Skill workflow: triage, enrichment, level-B recommendations, packaging | Draft |
+
+## Reading order
+
+`provider-adapters` → `identity-resolution` → `scoring-engine` (+ `archetype-library`) → `output-contract` → `skill-integration` mirrors the pipeline: adapt, resolve, score, emit, reason.
