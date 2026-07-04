@@ -1,0 +1,41 @@
+[
+  {
+    "id": 84312077,
+    "name": "[prod] checkout-api p95 latency high",
+    "query": "avg(last_10m):p95:trace.http.request.duration{service:checkout-api,env:prod} > 2.5",
+    "message": "p95 latency breach. @pagerduty-Checkout-API @oncall@example.com",
+    "type": "query alert",
+    "priority": 2,
+    "tags": ["service:checkout-api", "env:prod", "team:payments", "managed-by-terraform"],
+    "overall_state": "OK",
+    "created": "2025-11-02T14:31:00Z",
+    "modified": "2026-03-18T09:12:44Z",
+    "options": { "silenced": {}, "thresholds": { "critical": 2.5 } }
+  },
+  {
+    "id": 84312440,
+    "name": "checkout-api disk usage",
+    "query": "avg(last_1h):avg:system.disk.in_use{service:checkout-api} >= 0.9",
+    "message": "Disk filling up.",
+    "type": "query alert",
+    "priority": null,
+    "tags": ["service:checkout-api"],
+    "overall_state": "OK",
+    "created": "2026-01-10T08:00:00Z",
+    "modified": "2026-01-10T08:00:00Z",
+    "options": { "silenced": { "*": 1780000000 }, "thresholds": { "critical": 0.9 } }
+  },
+  {
+    "id": 90000001,
+    "name": "composite anomaly watcher",
+    "query": "12345 && 67890",
+    "message": "Composite; no simple threshold.",
+    "type": "composite",
+    "priority": 4,
+    "tags": [],
+    "overall_state": "Alert",
+    "created": "2026-02-01T00:00:00Z",
+    "modified": "2026-02-02T00:00:00Z",
+    "options": { "silenced": {}, "thresholds": {} }
+  }
+]
