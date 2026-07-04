@@ -51,7 +51,10 @@ func Composite(in CompositeInput, cfg Config) CompositeResult {
 	for i, p := range parts {
 		if available[i] {
 			availableWeight += p.weight
-			weightedSum += p.score * p.weight
+			// Separate statement prevents cross-architecture FMA fusion
+			// (ADR 0005 determinism).
+			product := p.score * p.weight
+			weightedSum += product
 		} else {
 			res.PartialScore = true
 		}

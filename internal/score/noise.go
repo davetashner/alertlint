@@ -61,7 +61,11 @@ func NoiseForAlert(alertID string, classifications []FireClassification, cfg Con
 		case ClassNoise:
 			out.Counts.Noise++
 			noiseConf += c.Confidence
-			noiseConfSq += c.Confidence * c.Confidence
+			// Two statements, not one: assignment rounds to float64,
+			// preventing FMA fusion that diverges across architectures
+			// (ADR 0005 determinism).
+			sq := c.Confidence * c.Confidence
+			noiseConfSq += sq
 			participatingConf += c.Confidence
 			participating++
 		case ClassActionable:
