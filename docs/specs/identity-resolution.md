@@ -530,11 +530,13 @@ this spec does not relitigate them. Spec-level alternatives:
   integration link over tag), or is `ambiguous_ci_reference` + human
   resolution always the answer? Owner: dave; default to the finding until a
   real case motivates precedence.
-- **One artifact, many services.** Shared monitors (one Datadog monitor
-  covering several services via `group by`) break the artifact→single-CI
-  assumption. v1 maps to at most one CI and flags the pattern if detectable;
-  a multi-CI mapping model is deferred. Owner: dave; revisit with
-  [scoring-engine.md](scoring-engine.md) since it changes join semantics.
+- ~~One artifact, many services~~ — resolved by
+  [ADR 0006](../decision-records/0006-shared-monitor-attribution.md):
+  fires attribute per event (each event artifact already resolves
+  independently); configs join every CI whose events reference them and
+  are marked `shared` in output. The mapping table's one-artifact-one-row
+  invariant is preserved.
+
 - **Regex escape hatch for convention rules.** Add only if the fixed transform
   vocabulary proves insufficient against real estate conventions. Owner: dave;
   decide after the first real rules file is authored.

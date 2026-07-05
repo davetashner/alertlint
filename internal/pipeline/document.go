@@ -19,8 +19,8 @@ type serviceJoin struct {
 	fires   map[string][]score.Fire // alert id (config native id or UnjoinedAlertID) -> fires
 }
 
-func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pull pulled, resolved identity.Result, suggested map[identity.DataClass]int) output.Document {
-	join := joinService(mappings, pull)
+func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pull pulled, resolved identity.Result, suggested map[identity.DataClass]int, members map[identity.ArtifactRef]map[string]bool) output.Document {
+	join := joinService(mappings, pull, ci.ID, members)
 	tierKey, tierSource, tierFinding := score.ResolveTier(ci.CriticalityTier, opts.Config)
 
 	// Per-alert classification, states, and scoring — the same
@@ -112,7 +112,7 @@ func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pu
 
 	doc := output.Document{
 		ContractVersion: output.ContractVersion,
-		Identity:        buildIdentity(ci, tierKey, tierSource, mappings, coverage),
+		Identity:        buildIdentity(ci, tierKey, tierSource, mappings, coverage, pull, resolved, members),
 		Findings:        []output.Finding{},
 	}
 	window := output.Window{Start: opts.Window.Start, End: opts.Window.End, Days: int(opts.Window.End.Sub(opts.Window.Start).Hours() / 24)}
@@ -179,7 +179,7 @@ func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pu
 	return doc
 }
 
-func buildIdentity(ci identity.CI, tierKey string, tierSource score.CriticalitySource, mappings []identity.Mapping, coverage identity.Coverage) output.Identity {
+func buildIdentity(ci identity.CI, tierKey string, tierSource score.CriticalitySource, mappings []identity.Mapping, coverage identity.Coverage, pull pulled, resolved identity.Result, members map[identity.ArtifactRef]map[string]bool) output.Identity {
 	id := output.Identity{
 		CI: &output.CIBlock{
 			ID:                ci.ID,
@@ -214,6 +214,59 @@ func buildIdentity(ci identity.CI, tierKey string, tierSource score.CriticalityS
 		}
 		id.Artifacts = append(id.Artifacts, art)
 	}
+	// Shared configs the CI belongs to by event reference but did not map
+	// itself: synthesize entries carrying the config's own resolution row.
+	ownRefs := map[identity.ArtifactRef]bool{}
+	for _, m := range sorted {
+		ownRefs[m.Artifact] = true
+	}
+	mappingRow := map[identity.ArtifactRef]identity.Mapping{}
+	for _, m := range resolved.Mappings {
+		if m.DataClass == identity.ClassConfig {
+			mappingRow[m.Artifact] = m
+		}
+	}
+	memberRefs := make([]identity.ArtifactRef, 0, len(members))
+	for ref, owners := range members {
+		if owners[ci.ID] && !ownRefs[ref] {
+			memberRefs = append(memberRefs, ref)
+		}
+	}
+	sort.Slice(memberRefs, func(i, j int) bool { return memberRefs[i].Key < memberRefs[j].Key })
+	for _, ref := range memberRefs {
+		row, mapped := mappingRow[ref]
+		if !mapped {
+			continue // unmapped shared config: fires still score via events
+		}
+		bySource[ref.Source]++
+		art := output.Artifact{
+			Source:   ref.Source,
+			Kind:     "alert_config",
+			NativeID: ref.Kind + ":" + ref.Key,
+			Resolution: output.Resolution{
+				Method:     row.Method,
+				Confidence: confidenceBandFor(row.Method),
+			},
+			Shared: true,
+		}
+		if row.Evidence.RuleID != "" {
+			rule := row.Evidence.RuleID
+			art.Resolution.Rule = &rule
+		}
+		id.Artifacts = append(id.Artifacts, art)
+	}
+	// Own configs that other CIs also reference are shared too.
+	for i := range id.Artifacts {
+		if id.Artifacts[i].Kind != "alert_config" || id.Artifacts[i].Shared {
+			continue
+		}
+		for ref, owners := range members {
+			if ref.Kind+":"+ref.Key == id.Artifacts[i].NativeID && len(owners) > 1 {
+				id.Artifacts[i].Shared = true
+			}
+		}
+	}
+
 	note := "full"
 	if coverage.Partial {
 		note = "partial"
@@ -304,14 +357,23 @@ func fireInMaintenance(f score.Fire, windows []model.MaintenanceWindow) bool {
 	return false
 }
 
-func joinService(mappings []identity.Mapping, pull pulled) serviceJoin {
+func joinService(mappings []identity.Mapping, pull pulled, ciID string, members map[identity.ArtifactRef]map[string]bool) serviceJoin {
 	join := serviceJoin{configs: map[identity.ArtifactRef]model.AlertConfig{}, fires: map[string][]score.Fire{}}
 
-	// Configs first, so events can join to them.
+	// Configs first, so events can join to them: the CI's own mapped
+	// configs plus shared configs it belongs to by event reference
+	// (ADR 0006 membership).
 	for _, m := range mappings {
 		if m.DataClass == identity.ClassConfig {
 			if cfg, ok := pull.configs[m.Artifact]; ok {
 				join.configs[m.Artifact] = cfg
+			}
+		}
+	}
+	for ref, owners := range members {
+		if owners[ciID] {
+			if cfg, ok := pull.configs[ref]; ok {
+				join.configs[ref] = cfg
 			}
 		}
 	}

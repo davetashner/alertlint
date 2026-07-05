@@ -18,3 +18,4 @@ Architecture Decision Records (ADRs) for alertlint. Each record captures one sig
 | [0003](0003-deterministic-inference-boundary.md) | Deterministic/inference boundary: CLI computes, skill judges | Accepted |
 | [0004](0004-provider-adapter-interface.md) | Per-data-class provider interfaces with canonical models | Accepted |
 | [0005](0005-implementation-language-go.md) | Implementation language: Go | Accepted |
+| [0006](0006-shared-monitor-attribution.md) | Shared monitors: per-event attribution, config membership by reference | Accepted |

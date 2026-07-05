@@ -3,6 +3,7 @@ package pipeline
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -584,5 +585,97 @@ func TestOffHoursEvidence(t *testing.T) {
 	// Evidence-only: scores identical across timezones.
 	if *jpDoc.Scores.Noise != *utcDoc.Scores.Noise || *jpDoc.Scores.PriorityScore != *utcDoc.Scores.PriorityScore {
 		t.Errorf("off-hours must not change scores: noise %v vs %v", *jpDoc.Scores.Noise, *utcDoc.Scores.Noise)
+	}
+}
+
+// ADR 0006: a shared monitor's fires attribute per event, its config
+// joins every referencing CI, and sharing is visible in both documents.
+func TestSharedMonitorAttribution(t *testing.T) {
+	dir := t.TempDir()
+	opts := testOptions(t, dir)
+
+	ddProvider := "datadog"
+	monitorID := "84312077" // checkout's latency monitor, tag-mapped to CI0012345
+	monitorName := "[prod] checkout-api p95 latency high"
+
+	// unrelated-svc pages through the SAME monitor (multi-alert group).
+	for _, p := range opts.Registry.HistoryProviders() {
+		if p.ProviderID() != "pagerduty" {
+			continue
+		}
+		fp := p.(*fake.Provider)
+		for i := range 4 {
+			id := fmt.Sprintf("SHARED%02d", i)
+			fired := opts.Window.Start.AddDate(0, 0, 40+i*7)
+			resolved := fired.Add(45 * time.Minute)
+			fp.Events = append(fp.Events, model.AlertEvent{
+				Envelope:        envelope("pagerduty", "incident", id, hints(nil, "unrelated-svc")),
+				AlertRef:        model.AlertRef{Provider: &ddProvider, NativeID: &monitorID, Name: &monitorName},
+				FiredAt:         fired,
+				ResolvedAt:      &resolved,
+				OccurrenceCount: 1,
+				Severity:        model.Severity{Native: "high", Normalized: model.SeverityHigh},
+			})
+			fp.Responses = append(fp.Responses, model.ResponseRecord{
+				Envelope:      envelope("pagerduty", "incident", id, hints(nil, "unrelated-svc")),
+				EventRef:      model.EventRef{Provider: strPtr("pagerduty"), NativeID: strPtr(id)},
+				AckedAt:       timePtr(fired.Add(5 * time.Minute)),
+				ClosedAt:      &resolved,
+				Disposition:   model.DispositionUnknown,
+				LinkedRecords: []model.LinkedRecord{{Kind: model.LinkedIncident, NativeID: "INC-SH-" + id}},
+			})
+		}
+	}
+	if _, err := Run(opts); err != nil {
+		t.Fatal(err)
+	}
+
+	var unrelated output.Document
+	raw, err := os.ReadFile(filepath.Join(dir, "unrelated-svc.CI0099999.json"))
+	if err != nil {
+		t.Fatalf("unrelated-svc must get a document: %v", err)
+	}
+	if err := json.Unmarshal(raw, &unrelated); err != nil {
+		t.Fatal(err)
+	}
+	// Its fires attach under the shared config, not the pseudo-alert.
+	if strings.Contains(string(raw), UnjoinedAlertID) {
+		t.Error("shared-monitor fires must join the config, not the pseudo-alert")
+	}
+	var sharedEntry bool
+	for _, a := range unrelated.Identity.Artifacts {
+		if a.Kind == "alert_config" && strings.Contains(a.NativeID, monitorID) {
+			if !a.Shared {
+				t.Error("membership entry must be marked shared")
+			}
+			sharedEntry = true
+		}
+	}
+	if !sharedEntry {
+		t.Error("unrelated-svc must carry the shared config's artifact entry")
+	}
+	if unrelated.Scores.Inputs.AlertsScored == 0 {
+		t.Error("unrelated-svc must score the shared monitor's fires")
+	}
+
+	// The owner's document marks the config shared too, and its noise
+	// evidence still counts only its own 14-fire pile (per-event
+	// attribution: the 4 unrelated fires never leak in).
+	var checkout output.Document
+	raw, _ = os.ReadFile(filepath.Join(dir, "checkout-api.CI0012345.json"))
+	if err := json.Unmarshal(raw, &checkout); err != nil {
+		t.Fatal(err)
+	}
+	var ownShared bool
+	for _, a := range checkout.Identity.Artifacts {
+		if a.Kind == "alert_config" && strings.Contains(a.NativeID, monitorID) && a.Shared {
+			ownShared = true
+		}
+	}
+	if !ownShared {
+		t.Error("owner's entry for a shared config must be marked shared")
+	}
+	if !strings.Contains(string(raw), `"fire_count": 14`) {
+		t.Error("owner's noise evidence must count only its own fires (per-event attribution)")
 	}
 }
