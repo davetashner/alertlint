@@ -39,7 +39,10 @@ func loadReplayRegistry(dir string) (*adapter.Registry, error) {
 	}
 	for _, name := range names {
 		p := &fake.Provider{ID: name}
-		base := filepath.Join(dir, name)
+		base, err := canonicalDir(filepath.Join(dir, name))
+		if err != nil {
+			return nil, err
+		}
 		if err := loadJSONL(filepath.Join(base, "configs.jsonl"), &p.Configs); err != nil {
 			return nil, err
 		}
@@ -57,6 +60,50 @@ func loadReplayRegistry(dir string) (*adapter.Registry, error) {
 		}
 	}
 	return registry, nil
+}
+
+// canonicalDir resolves a provider directory to where its JSONL files
+// live: either flat fixtures (<dir>/*.jsonl) or a snapshot-cache layout
+// (<dir>/<key-hash>/canonical/*.jsonl) — a cache directory written by
+// `analyze --cache-dir` is directly replayable. With several snapshots,
+// the newest complete one wins; failed snapshots are never replayed.
+func canonicalDir(dir string) (string, error) {
+	flat, err := filepath.Glob(filepath.Join(dir, "*.jsonl"))
+	if err != nil {
+		return "", err
+	}
+	if len(flat) > 0 {
+		return dir, nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+	best := ""
+	var bestFetched string
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		buf, err := os.ReadFile(filepath.Join(dir, e.Name(), "manifest.json"))
+		if err != nil {
+			continue // unsealed or foreign directory: not replayable
+		}
+		var m struct {
+			FetchedAt string `json:"fetched_at"`
+			Status    string `json:"status"`
+		}
+		if json.Unmarshal(buf, &m) != nil || m.Status != "complete" {
+			continue
+		}
+		if best == "" || m.FetchedAt > bestFetched || (m.FetchedAt == bestFetched && e.Name() > best) {
+			best, bestFetched = e.Name(), m.FetchedAt
+		}
+	}
+	if best == "" {
+		return "", fmt.Errorf("replay corpus: %s has neither *.jsonl fixtures nor a complete snapshot", dir)
+	}
+	return filepath.Join(dir, best, "canonical"), nil
 }
 
 // loadJSONL decodes one canonical record per line into out (a pointer to
