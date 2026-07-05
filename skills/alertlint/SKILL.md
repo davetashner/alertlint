@@ -87,6 +87,12 @@ Produce the owner-facing narrative ordered by `priority_score`
 means, the top findings with rationale quoted, proposed changes, and what
 was escalated. Humans read your output, not the raw JSON (REQ-NG-003).
 
+## Evals
+
+`evals/` holds graded scenarios with recorded results — re-run and record
+a row whenever this file or `references/` change (see
+`evals/self-healing.eval.md` for the procedure and CI posture).
+
 ## Acceptance scenario (the MVP gate)
 
 Given a document containing a low-confidence noise finding for a
