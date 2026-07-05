@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
@@ -9,7 +10,11 @@ import (
 	"os"
 	"time"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	cloudwatchsdk "github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+
 	"github.com/davetashner/alertlint/internal/adapter"
+	cwadapter "github.com/davetashner/alertlint/internal/adapter/cloudwatch"
 	"github.com/davetashner/alertlint/internal/adapter/datadog"
 	"github.com/davetashner/alertlint/internal/adapter/newrelic"
 	"github.com/davetashner/alertlint/internal/adapter/pagerduty"
@@ -161,6 +166,18 @@ func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
 		}
 		registered++
 	}
+	if os.Getenv("AWS_REGION") != "" || os.Getenv("AWS_PROFILE") != "" {
+		awsCfg, cfgErr := awsconfig.LoadDefaultConfig(context.Background())
+		if cfgErr != nil {
+			fmt.Fprintln(stderr, cfgErr)
+			return nil, cfgErr
+		}
+		if err := registry.Register(&cwadapter.Adapter{Client: cloudwatchsdk.NewFromConfig(awsCfg)}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return nil, err
+		}
+		registered++
+	}
 	if base := os.Getenv("SERVICENOW_URL"); base != "" {
 		if err := registry.Register(&servicenow.Adapter{
 			BaseURL: base, User: os.Getenv("SERVICENOW_USER"), Password: os.Getenv("SERVICENOW_PASSWORD"),
@@ -171,7 +188,7 @@ func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
 		registered++
 	}
 	if registered == 0 {
-		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, NEW_RELIC_API_KEY, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
+		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, NEW_RELIC_API_KEY, AWS_REGION/AWS_PROFILE, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
 		return nil, nil
 	}
 	return registry, nil
