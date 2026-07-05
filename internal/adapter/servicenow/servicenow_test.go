@@ -171,7 +171,7 @@ func TestEventMappingAndHints(t *testing.T) {
 
 func TestErrorsAreNotEmptyResults(t *testing.T) {
 	a := fixtureAdapter(t)
-	a.Transport = &fixtureTransport{t: t, fail: http.StatusServiceUnavailable}
+	a.Transport = &fixtureTransport{t: t, fail: http.StatusBadRequest} // non-retryable: surfaces immediately
 	var got error
 	for _, err := range a.FetchEvents(scope(), window()) {
 		if err != nil {
@@ -179,7 +179,7 @@ func TestErrorsAreNotEmptyResults(t *testing.T) {
 			break
 		}
 	}
-	if got == nil || !strings.Contains(got.Error(), "HTTP 503") {
+	if got == nil || !strings.Contains(got.Error(), "HTTP 400") {
 		t.Fatalf("failed pull must surface an error, got %v", got)
 	}
 }

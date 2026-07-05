@@ -251,7 +251,7 @@ func (a *Adapter) get(path string, q url.Values, into any) error {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	resp, err := transport.RoundTrip(req)
+	resp, err := adapter.DoWithRetry(transport, req)
 	if err != nil {
 		return fmt.Errorf("datadog %s: %w", path, err)
 	}

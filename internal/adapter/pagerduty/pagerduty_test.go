@@ -200,7 +200,7 @@ func TestErrorsAreNotEmptyResults(t *testing.T) {
 	a := &Adapter{Token: "t", Transport: &fixtureTransport{
 		t:     t,
 		pages: map[string]string{},
-		fail:  map[string]int{"/incidents@0": http.StatusTooManyRequests},
+		fail:  map[string]int{"/incidents@0": http.StatusForbidden}, // non-retryable: surfaces immediately
 	}}
 	var got error
 	for _, err := range a.FetchEvents(scope(), window()) {
@@ -209,7 +209,7 @@ func TestErrorsAreNotEmptyResults(t *testing.T) {
 			break
 		}
 	}
-	if got == nil || !strings.Contains(got.Error(), "HTTP 429") {
+	if got == nil || !strings.Contains(got.Error(), "HTTP 403") {
 		t.Fatalf("rate-limited pull must surface an error, got %v", got)
 	}
 }
@@ -229,5 +229,42 @@ func TestRecorderReceivesEveryPage(t *testing.T) {
 	}
 	if rec.pages != 2 { // one incidents page + one log_entries page
 		t.Errorf("recorded pages = %d, want 2", rec.pages)
+	}
+}
+
+// A throttled-then-healthy sequence completes the pull (alertlint-ul6).
+type flakyTransport struct {
+	inner    fixtureTransport
+	throttle int // number of leading 429s
+	calls    int
+}
+
+func (f *flakyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	f.calls++
+	if f.calls <= f.throttle {
+		return &http.Response{StatusCode: http.StatusTooManyRequests,
+			Header: http.Header{"Retry-After": []string{"0"}},
+			Body:   io.NopCloser(strings.NewReader(`{}`))}, nil
+	}
+	return f.inner.RoundTrip(req)
+}
+
+func TestRetrySurvivesThrottling(t *testing.T) {
+	a := &Adapter{Token: "t", Transport: &flakyTransport{
+		throttle: 2,
+		inner: fixtureTransport{t: t, pages: map[string]string{
+			"/incidents@0":   "incidents_page1.json",
+			"/log_entries@0": "log_entries_page1.json",
+		}},
+	}}
+	var count int
+	for _, err := range a.FetchEvents(scope(), window()) {
+		if err != nil {
+			t.Fatalf("throttled pull failed despite retries: %v", err)
+		}
+		count++
+	}
+	if count != 2 {
+		t.Errorf("events = %d, want 2", count)
 	}
 }
