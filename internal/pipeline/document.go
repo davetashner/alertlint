@@ -141,6 +141,10 @@ func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pu
 		doc.Findings = append(doc.Findings, fa.threshold(tf, cfgByID[tf.AlertID]))
 	}
 	for _, ar := range archResults {
+		if ar.Suppressed {
+			doc.Findings = append(doc.Findings, fa.suppressedArchetype(ar))
+			continue
+		}
 		if !ar.Applies {
 			continue
 		}

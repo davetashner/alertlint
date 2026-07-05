@@ -240,6 +240,62 @@ func TestEndToEnd(t *testing.T) {
 	}
 }
 
+// Overrides are input data: a positive enriched override makes an
+// archetype apply with zero telemetry match; a negative confirmed
+// override suppresses — and the suppression is recorded, never silent
+// (archetype-library.md §4).
+func TestOverridesFlipApplicability(t *testing.T) {
+	dir := t.TempDir()
+	opts := testOptions(t, dir)
+	opts.Overrides = []archetype.Override{
+		{CI: "CI0012345", Archetype: "business-transactions", Applies: true,
+			Source: "enriched", Provenance: "OpenAPI declares /payments"},
+		{CI: "CI0012345", Archetype: "rest-api", Applies: false,
+			Source: "confirmed", Provenance: "owner says batch-only"},
+	}
+	if _, err := Run(opts); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "checkout-api.CI0012345.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc output.Document
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	var bizGaps, restGaps, suppressed int
+	for _, f := range doc.Findings {
+		if f.Type != "coverage" {
+			continue
+		}
+		ev := string(f.Evidence)
+		switch {
+		case strings.Contains(ev, `"(suppressed)"`):
+			suppressed++
+			if !strings.Contains(ev, "rest-api") || !strings.Contains(ev, "confirmed") {
+				t.Errorf("suppression record wrong: %s", ev)
+			}
+		case strings.Contains(ev, "business-transactions"):
+			bizGaps++
+			if !strings.Contains(ev, `"archetype_source": "enriched"`) {
+				t.Errorf("enriched finding must carry archetype_source enriched: %s", ev)
+			}
+		case strings.Contains(ev, "rest-api"):
+			restGaps++
+		}
+	}
+	if bizGaps == 0 {
+		t.Error("enriched business-transactions must produce coverage gaps with zero telemetry match")
+	}
+	if restGaps != 0 {
+		t.Error("suppressed rest-api must emit no gap findings")
+	}
+	if suppressed != 1 {
+		t.Errorf("suppression records = %d, want exactly 1", suppressed)
+	}
+}
+
 // Offline replay guarantee: two runs over identical inputs produce
 // byte-identical documents (REQ-SCORE-007).
 func TestRunByteIdentical(t *testing.T) {

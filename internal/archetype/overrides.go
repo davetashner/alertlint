@@ -30,11 +30,9 @@ type overrideFile struct {
 	Overrides []Override `yaml:"overrides"`
 }
 
-// LoadOverrides reads an overrides file and returns the entries for one
-// service CI. Precedence within the file: confirmed (path D) beats
-// enriched (path C) for the same archetype; duplicate same-source entries
-// are an error — silent last-wins would hide authoring mistakes.
-func LoadOverrides(path, ci string) ([]Override, error) {
+// LoadAllOverrides reads and validates a whole overrides file; callers
+// filter per CI (the pipeline resolves many CIs in one run).
+func LoadAllOverrides(path string) ([]Override, error) {
 	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("archetype overrides: %w", err)
@@ -43,15 +41,29 @@ func LoadOverrides(path, ci string) ([]Override, error) {
 	if err := yaml.Unmarshal(buf, &f); err != nil {
 		return nil, fmt.Errorf("archetype overrides: %w", err)
 	}
-	var out []Override
-	seen := map[string]string{} // archetype -> source already kept
 	for _, o := range f.Overrides {
-		if o.CI != ci {
-			continue
-		}
 		if o.Source != "enriched" && o.Source != "confirmed" {
 			return nil, fmt.Errorf("archetype overrides: %s/%s: source %q not enriched|confirmed",
 				o.CI, o.Archetype, o.Source)
+		}
+	}
+	return f.Overrides, nil
+}
+
+// LoadOverrides reads an overrides file and returns the entries for one
+// service CI. Precedence within the file: confirmed (path D) beats
+// enriched (path C) for the same archetype; duplicate same-source entries
+// are an error — silent last-wins would hide authoring mistakes.
+func LoadOverrides(path, ci string) ([]Override, error) {
+	all, err := LoadAllOverrides(path)
+	if err != nil {
+		return nil, err
+	}
+	var out []Override
+	seen := map[string]string{} // archetype -> source already kept
+	for _, o := range all {
+		if o.CI != ci {
+			continue
 		}
 		if prev, dup := seen[o.Archetype]; dup {
 			if prev == o.Source {

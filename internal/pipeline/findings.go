@@ -153,6 +153,32 @@ func (fa findingAssembler) coverage(ar archetype.Result, sig archetype.SignalRes
 	}
 }
 
+// suppressedArchetype records a negative override in the output — the
+// suppression is visible, never a silent drop (archetype-library.md §4).
+func (fa findingAssembler) suppressedArchetype(ar archetype.Result) output.Finding {
+	signal := "(suppressed)"
+	subject := output.Subject{Signal: &signal}
+	basis := ar.Provenance
+	if basis == "" {
+		basis = "negative override without provenance"
+	}
+	return output.Finding{
+		ID:         output.FindingID("coverage-suppressed-"+ar.ArchetypeID, subject, fa.window),
+		Type:       "coverage",
+		Severity:   "low",
+		Confidence: "high",
+		Subject:    subject,
+		Rationale: fmt.Sprintf("Archetype %s was suppressed by a %s override; its coverage requirements were not evaluated.",
+			ar.ArchetypeID, ar.Source),
+		Evidence: mustJSON(coverageEvidence{
+			Archetype:          ar.ArchetypeID,
+			ArchetypeSource:    string(ar.Source),
+			MissingSignal:      "(suppressed)",
+			ApplicabilityBasis: basis,
+		}),
+	}
+}
+
 // identityEvidence carries the contract's required identity keys.
 type identityEvidence struct {
 	UnresolvedArtifact map[string]string `json:"unresolved_artifact"`

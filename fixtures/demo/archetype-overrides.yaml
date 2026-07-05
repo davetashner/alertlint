@@ -1,0 +1,20 @@
+# Demo overrides exercising paths C and D (docs/specs/archetype-library.md §4).
+overrides:
+  # Path C: the skill read payments-api's repo and asserted the
+  # business-transactions archetype telemetry inference could not see.
+  - ci: CI0002222
+    archetype: business-transactions
+    applies: true
+    source: enriched
+    provenance: >
+      Repo contains settlement-worker module and payments OpenAPI spec
+      declaring /payments and /refunds.
+    asserted_by: "alertlint skill (demo)"
+  # Path D: a human confirmed checkout-api is not a socket-connections
+  # service despite its connection-pool metrics.
+  - ci: CI0001111
+    archetype: socket-connections
+    applies: false
+    source: confirmed
+    provenance: "Owner confirmed pools are client-side only; no long-lived server sockets."
+    asserted_by: "dave (demo)"

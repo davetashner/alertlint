@@ -36,6 +36,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	conventionsPath := fs.String("identity-conventions", "configs/identity-conventions.yaml", "identity convention rules file")
 	ciTagKeys := fs.String("ci-tag-keys", "cmdb_ci,ci_id", "comma-separated tag keys treated as explicit CI references")
 	replayDir := fs.String("replay", "", "offline mode: read canonical JSONL fixtures from this corpus directory instead of live APIs")
+	overridesPath := fs.String("archetype-overrides", "", "archetype override file (paths C/D of REQ-COV-003)")
 	runTimestamp := fs.String("run-timestamp", "", "RFC3339 run timestamp override (deterministic runs; default now)")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -59,6 +60,14 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
+	}
+	var overrides []archetype.Override
+	if *overridesPath != "" {
+		overrides, err = archetype.LoadAllOverrides(*overridesPath)
+		if err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
 	}
 
 	var registry *adapter.Registry
@@ -94,6 +103,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 		Window:     adapter.TimeWindow{Start: now.AddDate(0, 0, -*windowDays), End: now},
 		Config:     cfg,
 		Library:    lib,
+		Overrides:  overrides,
 		Convention: conv,
 		Resolver:   identity.ResolverConfig{CIIDTagKeys: splitComma(*ciTagKeys)},
 		OutDir:     *out,
