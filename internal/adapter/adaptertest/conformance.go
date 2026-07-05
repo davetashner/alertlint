@@ -35,7 +35,7 @@ func Run(t *testing.T, p adapter.Provider, scope adapter.Scope, window adapter.T
 	}
 
 	caps := adapter.CapabilitiesOf(p)
-	if !caps.Config && !caps.History && !caps.Action && !caps.CI {
+	if !caps.Config && !caps.History && !caps.Action && !caps.CI && !caps.Maintenance {
 		t.Fatal("provider satisfies no data-class interface")
 	}
 
@@ -67,6 +67,35 @@ func Run(t *testing.T, p adapter.Provider, scope adapter.Scope, window adapter.T
 			assertSameOrder(t, ids, again)
 		})
 	}
+	if mp, ok := p.(adapter.MaintenanceProvider); ok {
+		t.Run("maintenance", func(t *testing.T) {
+			ids := collectMaintenance(t, mp, scope, window)
+			again := collectMaintenance(t, mp, scope, window)
+			assertSameOrder(t, ids, again)
+		})
+	}
+}
+
+func collectMaintenance(t *testing.T, mp adapter.MaintenanceProvider, scope adapter.Scope, window adapter.TimeWindow) []string {
+	t.Helper()
+	var ids []string
+	for mw, err := range mp.FetchMaintenance(scope, window) {
+		if err != nil {
+			t.Fatalf("FetchMaintenance failed: %v", err)
+		}
+		checkEnvelope(t, mw.Envelope, mp)
+		if mw.StartsAt.IsZero() {
+			t.Errorf("%s: starts_at required", mw.SourceRef.NativeID)
+		}
+		if mw.EndsAt != nil && mw.EndsAt.Before(mw.StartsAt) {
+			t.Errorf("%s: ends_at before starts_at", mw.SourceRef.NativeID)
+		}
+		if mw.MonitorRefs == nil {
+			t.Errorf("%s: monitor_refs must be non-nil (empty = scope-wide)", mw.SourceRef.NativeID)
+		}
+		ids = append(ids, mw.SourceRef.NativeID)
+	}
+	return ids
 }
 
 func collectCIs(t *testing.T, cp adapter.CIProvider, scope adapter.Scope, window adapter.TimeWindow) []string {

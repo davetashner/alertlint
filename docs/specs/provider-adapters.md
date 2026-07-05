@@ -385,6 +385,26 @@ Example:
 }
 ```
 
+#### 4.4 `MaintenanceWindow` (from `MaintenanceProvider`)
+
+Added for REQ-NOISE-005. One record per declared maintenance interval
+(Datadog downtime, PagerDuty maintenance window):
+
+```
+MaintenanceWindow:
+  <envelope>
+  starts_at:  timestamp
+  ends_at:    timestamp?            # absent = still open at pull time
+  monitor_refs: list<{provider, native_id}>   # monitors the window covers;
+                                    # empty = scope-wide (match by identity
+                                    # resolution downstream)
+  reason:     string?               # verbatim operator-supplied text
+```
+
+Adapters translate scope verbatim; deciding which fires fall inside a
+window is core logic (ADR 0003/0004). The interface is a fifth narrow
+provider (`MaintenanceProvider`), capability-discovered like the others.
+
 ### 5. Schema versioning
 
 - The three canonical models share **one canonical-schema version** (single

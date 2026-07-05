@@ -68,3 +68,10 @@ type ActionProvider interface {
 	Provider
 	FetchResponses(scope Scope, window TimeWindow) iter.Seq2[model.ResponseRecord, error]
 }
+
+// MaintenanceProvider pulls declared maintenance intervals overlapping
+// the window (REQ-NOISE-005; docs/specs/provider-adapters.md §4.4).
+type MaintenanceProvider interface {
+	Provider
+	FetchMaintenance(scope Scope, window TimeWindow) iter.Seq2[model.MaintenanceWindow, error]
+}
