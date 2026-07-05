@@ -1,0 +1,44 @@
+{ "entry": [
+  {
+    "name": "checkout-api error spike",
+    "acl": { "app": "checkout" },
+    "content": {
+      "search": "index=prod service=checkout-api level=ERROR | stats count",
+      "disabled": false,
+      "alert_type": "number of events",
+      "alert_comparator": "greater than",
+      "alert_threshold": "50",
+      "alert.severity": 4,
+      "actions": "email, pagerduty",
+      "cron_schedule": "*/10 * * * *"
+    }
+  },
+  {
+    "name": "weekly capacity report",
+    "acl": { "app": "search" },
+    "content": {
+      "search": "index=prod | timechart span=1d avg(cpu)",
+      "disabled": false,
+      "alert_type": "always",
+      "alert_comparator": "",
+      "alert_threshold": "",
+      "alert.severity": 0,
+      "actions": "",
+      "cron_schedule": "0 6 * * 1"
+    }
+  },
+  {
+    "name": "settlement lag rising",
+    "acl": { "app": "payments" },
+    "content": {
+      "search": "index=prod source=settlement | stats max(lag)",
+      "disabled": true,
+      "alert_type": "custom",
+      "alert_comparator": "rises by",
+      "alert_threshold": "abc",
+      "alert.severity": 5,
+      "actions": "slack",
+      "cron_schedule": "*/30 * * * *"
+    }
+  }
+] }
