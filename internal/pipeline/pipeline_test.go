@@ -108,7 +108,7 @@ func fixtureRegistry(t *testing.T, w adapter.TimeWindow) *adapter.Registry {
 
 	// An artifact nothing can resolve: lands in _unresolved.json.
 	orphan := &fake.Provider{ID: "newrelic", Configs: []model.AlertConfig{{
-		Envelope:     envelope("newrelic", "policy", "998811", hints(nil, "pmts-api-golden")),
+		Envelope:     envelope("newrelic", "policy", "998811", hints(nil, "pmts-api-golden", "Checkout API")),
 		Name:         "pmts-api-golden",
 		ConditionRaw: "SELECT ...",
 		Severity:     model.Severity{Native: "", Normalized: model.SeverityUnknown},
@@ -148,6 +148,7 @@ func testOptions(t *testing.T, outDir string) Options {
 		Library:    lib,
 		Convention: conv,
 		Resolver:   identity.ResolverConfig{CIIDTagKeys: []string{"ci_id"}},
+		Fuzzy:      identity.DefaultFuzzyConfig(),
 		OutDir:     outDir,
 		RunMeta: output.Run{
 			Timestamp:    time.Date(2026, 7, 4, 17, 0, 0, 0, time.UTC),
@@ -237,6 +238,18 @@ func TestEndToEnd(t *testing.T) {
 	}
 	if len(unres.Findings) == 0 || unres.Identity.Mapping.BySource["newrelic"] != 1 {
 		t.Errorf("unresolved doc = %+v", unres.Identity.Mapping)
+	}
+	// Fuzzy candidates ride inside the finding, never as mappings.
+	var candFinding string
+	for _, f := range unres.Findings {
+		if strings.Contains(string(f.Evidence), `"method": "fuzzy"`) {
+			candFinding = string(f.Evidence)
+		}
+	}
+	if candFinding == "" {
+		t.Error("orphan with a close name must carry fuzzy candidates in evidence")
+	} else if !strings.Contains(candFinding, "ambiguous_candidates") {
+		t.Errorf("candidate finding reason wrong: %s", candFinding)
 	}
 }
 

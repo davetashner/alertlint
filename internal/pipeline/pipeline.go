@@ -39,6 +39,7 @@ type Options struct {
 	Convention *identity.Conventions
 	Confirmed  []identity.ConfirmedMapping
 	Resolver   identity.ResolverConfig
+	Fuzzy      identity.FuzzyConfig
 	OutDir     string
 
 	// Run provenance — passed in, never read from the clock.
@@ -75,8 +76,19 @@ func Run(opts Options) (Result, error) {
 		return res, err
 	}
 
-	// 3. Resolve artifacts to CIs.
+	// 3. Resolve artifacts to CIs; fuzzy-suggest over the unresolved
+	// queue (strategy 4 — findings only, never mappings).
 	resolved := identity.Resolve(pull.artifacts, inventory, opts.Confirmed, opts.Convention, opts.Resolver)
+	suggestions := identity.Suggest(resolved.Unresolved, inventory, opts.Fuzzy)
+	suggestedCounts := map[string]map[identity.DataClass]int{}
+	for _, sg := range suggestions {
+		for _, c := range sg.Candidates {
+			if suggestedCounts[c.CIID] == nil {
+				suggestedCounts[c.CIID] = map[identity.DataClass]int{}
+			}
+			suggestedCounts[c.CIID][sg.Artifact.DataClass]++
+		}
+	}
 	byCI := map[string][]identity.Mapping{}
 	for _, m := range resolved.Mappings {
 		byCI[m.CIID] = append(byCI[m.CIID], m)
@@ -95,7 +107,7 @@ func Run(opts Options) (Result, error) {
 	// 4. Score and emit one document per CI.
 	for _, ciID := range ciIDs {
 		ci, _ := inventory.ByID(ciID)
-		doc := buildDocument(opts, ci, byCI[ciID], pull, resolved)
+		doc := buildDocument(opts, ci, byCI[ciID], pull, resolved, suggestedCounts[ciID])
 		buf, err := output.Marshal(doc)
 		if err != nil {
 			return res, fmt.Errorf("marshal %s: %w", ciID, err)
@@ -109,7 +121,7 @@ func Run(opts Options) (Result, error) {
 	}
 
 	// 5. The reserved unresolved document (never a silent drop).
-	unresolvedDoc := buildUnresolvedDocument(opts, resolved)
+	unresolvedDoc := buildUnresolvedDocument(opts, resolved, suggestions)
 	buf, err := output.Marshal(unresolvedDoc)
 	if err != nil {
 		return res, err

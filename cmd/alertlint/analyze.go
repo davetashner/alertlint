@@ -106,6 +106,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 		Overrides:  overrides,
 		Convention: conv,
 		Resolver:   identity.ResolverConfig{CIIDTagKeys: splitComma(*ciTagKeys)},
+		Fuzzy:      identity.DefaultFuzzyConfig(),
 		OutDir:     *out,
 		RunMeta: output.Run{
 			Timestamp:    now,
