@@ -45,8 +45,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case "worklist":
 		return runWorklist(args[1:], stdout, stderr)
 	case "identity":
-		fmt.Fprintf(stderr, "alertlint %s: not implemented yet — see docs/specs/\n", args[0])
-		return 1
+		return runIdentity(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "alertlint: unknown command %q\n\n", args[0])
 		fmt.Fprint(stderr, usageText)
