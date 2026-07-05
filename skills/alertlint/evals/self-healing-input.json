@@ -1,0 +1,739 @@
+{
+  "contract_version": "1.0.0",
+  "identity": {
+    "ci": {
+      "id": "CI0001111",
+      "name": "checkout-api",
+      "criticality_tier": 1,
+      "criticality_source": "cmdb"
+    },
+    "artifacts": [
+      {
+        "source": "datadog",
+        "kind": "alert_config",
+        "native_id": "monitor:70001",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "dd-service-tag"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "datadog",
+        "kind": "alert_config",
+        "native_id": "monitor:70002",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "dd-service-tag"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU000",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU000",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU001",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU001",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU002",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU002",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU003",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU003",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU004",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU004",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU005",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU005",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU006",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU006",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU007",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU007",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU008",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU008",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU009",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU009",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU010",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU010",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU011",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU011",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU012",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU012",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU013",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU013",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU014",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU014",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU015",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU015",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU016",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU016",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDCPU017",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDCPU017",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDLAT000",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDLAT000",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDLAT001",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDLAT001",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDLAT002",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDLAT002",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "alert_event",
+        "native_id": "incident:PDLAT003",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      },
+      {
+        "source": "pagerduty",
+        "kind": "response_record",
+        "native_id": "incident:PDLAT003",
+        "native_name": null,
+        "resolution": {
+          "method": "convention",
+          "confidence": "medium",
+          "rule": "pd-service-name"
+        },
+        "analysis_state": null
+      }
+    ],
+    "mapping": {
+      "resolved_count": 46,
+      "candidate_count": 0,
+      "coverage_note": "full",
+      "by_source": {
+        "datadog": 2,
+        "pagerduty": 44
+      }
+    }
+  },
+  "scores": {
+    "noise": 75.50000000000001,
+    "coverage": 66.66666666666667,
+    "threshold": 50,
+    "composite": 66.47500000000001,
+    "criticality_tier": 1,
+    "priority_score": 67.04999999999998,
+    "inputs": {
+      "alerts_scored": 2,
+      "alerts_dormant": 0,
+      "alerts_insufficient_data": 0,
+      "fires_in_maintenance": 0,
+      "fires_off_hours": 4
+    }
+  },
+  "findings": [
+    {
+      "id": "ald-22c42c40",
+      "type": "coverage",
+      "severity": "high",
+      "confidence": "high",
+      "subject": {
+        "source": null,
+        "native_id": null,
+        "signal": "error-rate"
+      },
+      "rationale": "Service matches the rest-api archetype but has no error-rate alert (golden-signals/errors anchor).",
+      "evidence": {
+        "archetype": "rest-api",
+        "archetype_source": "inferred",
+        "missing_signal": "error-rate",
+        "applicability_basis": "telemetry matched applies_when on 1 artifact(s)",
+        "matched_artifacts": [
+          "70002"
+        ],
+        "absence_severity": "high"
+      },
+      "proposed_change": null
+    },
+    {
+      "id": "ald-bba22e08",
+      "type": "noise",
+      "severity": "high",
+      "confidence": "low",
+      "subject": {
+        "source": "datadog",
+        "native_id": "monitor:70001",
+        "signal": null
+      },
+      "rationale": "100% of the confidence-weighted evidence over 18 fires in 90d says noise (0 no-action, 18 auto-resolved, 0 acked).",
+      "evidence": {
+        "fire_count": 18,
+        "window_days": 90,
+        "acked_count": 0,
+        "no_action_count": 0,
+        "auto_resolved_count": 18,
+        "median_time_to_resolve_s": 240,
+        "disposition_counts": {
+          "unknown": 18
+        },
+        "noise_ratio": 1,
+        "class_counts": {
+          "noise": 18,
+          "actionable": 0,
+          "unclear": 0,
+          "unclassified": 0
+        },
+        "off_hours_fire_count": 4,
+        "off_hours_ratio": 0.2222222222222222
+      },
+      "proposed_change": null
+    },
+    {
+      "id": "ald-708ea053",
+      "type": "threshold",
+      "severity": "high",
+      "confidence": "medium",
+      "subject": {
+        "source": "datadog",
+        "native_id": "monitor:70001",
+        "signal": null
+      },
+      "rationale": "every classified fire in the window was noise — the alert provides no operational value as tuned",
+      "evidence": {
+        "fire_count": 18,
+        "window_days": 90,
+        "no_action_ratio": 1,
+        "current_threshold": null,
+        "current_duration_s": null,
+        "rule_id": "TH-4",
+        "stats": {
+          "fires_per_week": 1.4,
+          "no_action_ratio": 1,
+          "p50_auto_resolve_minutes": 4,
+          "max_fires_in_one_day": 1,
+          "classified_fire_count": 18
+        }
+      },
+      "proposed_change": null
+    }
+  ],
+  "metadata": {
+    "run": {
+      "timestamp": "2026-07-04T18:00:00Z",
+      "tool_version": "dev",
+      "invocation_id": "0f238715"
+    },
+    "window": {
+      "start": "2026-04-05T18:00:00Z",
+      "end": "2026-07-04T18:00:00Z",
+      "days": 90
+    },
+    "config": {
+      "weights": {
+        "noise": 45,
+        "coverage": 30,
+        "threshold": 25
+      },
+      "priority_formula_version": "1",
+      "config_hash": "sha256:f22563f5b9c7"
+    },
+    "archetype_library_version": "2.0.0",
+    "convention_ruleset_version": "d7425be628a3",
+    "sources": [
+      {
+        "source": "datadog",
+        "adapter_version": "dev",
+        "canonical_schema_version": "1.0",
+        "snapshot_key": "datadog/demo/2026-04-05_2026-07-04",
+        "record_counts": {
+          "configs": 3,
+          "maintenance": 1
+        }
+      },
+      {
+        "source": "newrelic",
+        "adapter_version": "dev",
+        "canonical_schema_version": "1.0",
+        "snapshot_key": "newrelic/demo/2026-04-05_2026-07-04",
+        "record_counts": {
+          "configs": 1
+        }
+      },
+      {
+        "source": "pagerduty",
+        "adapter_version": "dev",
+        "canonical_schema_version": "1.0",
+        "snapshot_key": "pagerduty/demo/2026-04-05_2026-07-04",
+        "record_counts": {
+          "events": 22,
+          "responses": 22
+        }
+      },
+      {
+        "source": "servicenow",
+        "adapter_version": "dev",
+        "canonical_schema_version": "1.0",
+        "snapshot_key": "servicenow/demo/2026-04-05_2026-07-04",
+        "record_counts": {
+          "events": 6,
+          "responses": 6
+        }
+      }
+    ]
+  }
+}
