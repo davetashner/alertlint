@@ -141,10 +141,10 @@ archetypes:
           equals: "alertlint:archetype=rest-api"
           strength: strong
         - kind: metric_pattern
-          pattern: '(?i)(^|[._])(http|request|endpoint)s?[._](latency|duration|count|rate|errors?|[45]xx)([._]|$)'
+          pattern: '(?i)(^|[._:])(http|request|endpoint)s?[._](latency|duration|count|rate|errors?|[45]xx)([._{,:]|\s|$)'
           strength: strong
         - kind: metric_pattern
-          pattern: '(?i)(^|[._])(elb|alb|apigateway|nginx|envoy|istio)([._]|$)'
+          pattern: '(?i)(^|[._:])(elb|alb|apigateway|nginx|envoy|istio)([._{,:]|\s|$)'
           strength: weak
     required_signals:
       - id: latency
@@ -204,7 +204,7 @@ archetypes:
           equals: "alertlint:archetype=socket-connections"
           strength: strong
         - kind: metric_pattern
-          pattern: '(?i)(^|[._])(hikari|pgbouncer|jdbc|odbc)([._]|$)|connections?[._](active|idle|open|count|max|wait)'
+          pattern: '(?i)(^|[._:])(hikari|pgbouncer|jdbc|odbc)([._{,:]|\s|$)|connections?[._](active|idle|open|count|max|wait)'
           strength: strong
     required_signals:
       - id: connection-pool
@@ -383,7 +383,7 @@ one finding, conforming to the taxonomy in REQ-OUT-003 /
     "archetype_source": "inferred",
     "applicability_evidence": [
       {
-        "predicate": "metric_pattern:(?i)(^|[._])(http|request|endpoint)s?[._](latency|...)",
+        "predicate": "metric_pattern:(?i)(^|[._:])(http|request|endpoint)s?[._](latency|...)",
         "matched": ["monitor dd:1234 metric http.request.duration"]
       }
     ],
