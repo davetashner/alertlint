@@ -25,6 +25,7 @@ Commands:
   identity   Manage artifact-to-CI identity mappings (docs/specs/identity-resolution.md)
   validate   Check documents against the output-contract JSON Schema
   diff       Compare two analyze output corpora run-over-run
+  calibrate  Report observed distributions vs scoring-config constants
   version    Print the alertlint version
   help       Show this help
 `
@@ -55,6 +56,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runValidate(args[1:], stdout, stderr)
 	case "diff":
 		return runDiff(args[1:], stdout, stderr)
+	case "calibrate":
+		return runCalibrate(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "alertlint: unknown command %q\n\n", args[0])
 		fmt.Fprint(stderr, usageText)
