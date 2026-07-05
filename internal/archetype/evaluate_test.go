@@ -26,8 +26,8 @@ func httpArtifact(id string) Artifact {
 
 func TestLoadCommittedLibrary(t *testing.T) {
 	l := lib(t)
-	if l.LibraryVersion != "1.0.0" || len(l.Archetypes) != 3 {
-		t.Fatalf("library = v%s with %d archetypes, want 1.0.0 / 3", l.LibraryVersion, len(l.Archetypes))
+	if l.LibraryVersion != "2.0.0" || len(l.Archetypes) != 3 {
+		t.Fatalf("library = v%s with %d archetypes, want 2.0.0 / 3", l.LibraryVersion, len(l.Archetypes))
 	}
 	// Every metric_pattern in the shipped library compiled under RE2 —
 	// LoadLibrary would have failed otherwise. This is the authoritative
@@ -109,6 +109,31 @@ func TestPredicateKinds(t *testing.T) {
 			}
 			if tc.applies && rest.Source != SourceInferred {
 				t.Errorf("source = %s, want inferred", rest.Source)
+			}
+		})
+	}
+}
+
+// Real vendor query strings must drive applicability even though the
+// metric term is followed by {tags} or "> N", not a [._] boundary
+// (alertlint-o7p regression).
+func TestVendorQueryBoundaries(t *testing.T) {
+	l := lib(t)
+	cases := []struct {
+		name    string
+		ref     string
+		applies bool
+	}{
+		{"datadog tag-suffixed http metric", "avg(last_10m):p95:trace.http.request.duration{service:checkout-api,env:prod} > 2.5", true},
+		{"colon-prefixed request rate", "sum:request.rate{*} > 100", true},
+		{"whitespace after term", "http.request.count > 50", true},
+		{"cpu metric still not rest-api", "avg(last_5m):avg:system.cpu.utilization.pct{service:x} > 85", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := Evaluate(l, []Artifact{{ID: "m", MetricRefs: []string{tc.ref}}}, nil)
+			if got := findResult(t, res, "rest-api").Applies; got != tc.applies {
+				t.Errorf("applies = %v, want %v for %q", got, tc.applies, tc.ref)
 			}
 		})
 	}
