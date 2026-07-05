@@ -35,6 +35,8 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	libraryPath := fs.String("archetype-library", "archetypes/library.yaml", "archetype library file")
 	conventionsPath := fs.String("identity-conventions", "configs/identity-conventions.yaml", "identity convention rules file")
 	ciTagKeys := fs.String("ci-tag-keys", "cmdb_ci,ci_id", "comma-separated tag keys treated as explicit CI references")
+	replayDir := fs.String("replay", "", "offline mode: read canonical JSONL fixtures from this corpus directory instead of live APIs")
+	runTimestamp := fs.String("run-timestamp", "", "RFC3339 run timestamp override (deterministic runs; default now)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -59,37 +61,32 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	registry := adapter.NewRegistry()
-	registered := 0
-	if key := os.Getenv("DD_API_KEY"); key != "" {
-		if err := registry.Register(&datadog.Adapter{APIKey: key, AppKey: os.Getenv("DD_APP_KEY")}); err != nil {
+	var registry *adapter.Registry
+	if *replayDir != "" {
+		registry, err = loadReplayRegistry(*replayDir)
+		if err != nil {
 			fmt.Fprintln(stderr, err)
 			return 1
 		}
-		registered++
-	}
-	if token := os.Getenv("PAGERDUTY_TOKEN"); token != "" {
-		if err := registry.Register(&pagerduty.Adapter{Token: token}); err != nil {
-			fmt.Fprintln(stderr, err)
+	} else {
+		registry, err = liveRegistry(stderr)
+		if registry == nil {
+			return 2
+		}
+		if err != nil {
 			return 1
 		}
-		registered++
-	}
-	if base := os.Getenv("SERVICENOW_URL"); base != "" {
-		if err := registry.Register(&servicenow.Adapter{
-			BaseURL: base, User: os.Getenv("SERVICENOW_USER"), Password: os.Getenv("SERVICENOW_PASSWORD"),
-		}); err != nil {
-			fmt.Fprintln(stderr, err)
-			return 1
-		}
-		registered++
-	}
-	if registered == 0 {
-		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD")
-		return 2
 	}
 
 	now := time.Now().UTC()
+	if *runTimestamp != "" {
+		parsed, perr := time.Parse(time.RFC3339, *runTimestamp)
+		if perr != nil {
+			fmt.Fprintf(stderr, "alertlint analyze: bad --run-timestamp: %v\n", perr)
+			return 2
+		}
+		now = parsed.UTC()
+	}
 	sum := sha256.Sum256([]byte(now.Format(time.RFC3339Nano) + *tenant))
 	opts := pipeline.Options{
 		Registry:   registry,
@@ -114,6 +111,41 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "analyzed %d service(s), %d unresolved artifact(s); %d document(s) written to %s\n",
 		res.Services, res.Unresolved, len(res.Documents), *out)
 	return 0
+}
+
+// liveRegistry builds the registry from environment credentials. A nil
+// registry means no credentials were found (exit 2).
+func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
+	registry := adapter.NewRegistry()
+	registered := 0
+	if key := os.Getenv("DD_API_KEY"); key != "" {
+		if err := registry.Register(&datadog.Adapter{APIKey: key, AppKey: os.Getenv("DD_APP_KEY")}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return nil, err
+		}
+		registered++
+	}
+	if token := os.Getenv("PAGERDUTY_TOKEN"); token != "" {
+		if err := registry.Register(&pagerduty.Adapter{Token: token}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return nil, err
+		}
+		registered++
+	}
+	if base := os.Getenv("SERVICENOW_URL"); base != "" {
+		if err := registry.Register(&servicenow.Adapter{
+			BaseURL: base, User: os.Getenv("SERVICENOW_USER"), Password: os.Getenv("SERVICENOW_PASSWORD"),
+		}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return nil, err
+		}
+		registered++
+	}
+	if registered == 0 {
+		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
+		return nil, nil
+	}
+	return registry, nil
 }
 
 func splitComma(s string) []string {
