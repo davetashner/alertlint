@@ -1,0 +1,7 @@
+{ "nrql_conditions": [
+  {
+    "id": 555001, "name": "nightly batch failures", "enabled": false,
+    "terms": [],
+    "nrql": { "query": "SELECT count(*) FROM BatchResult WHERE status = 'failed'" }
+  }
+] }

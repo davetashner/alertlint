@@ -1,0 +1,4 @@
+{ "policies": [
+  { "id": 100, "name": "Payments API" },
+  { "id": 200, "name": "Batch Jobs" }
+] }
