@@ -17,6 +17,7 @@ import (
 //	<dir>/<provider>/events.jsonl     -> HistoryProvider records
 //	<dir>/<provider>/responses.jsonl  -> ActionProvider records
 //	<dir>/<provider>/cis.jsonl        -> CIProvider records
+//	<dir>/<provider>/maintenance.jsonl -> MaintenanceProvider records
 //
 // This is the offline path (docs/specs/provider-adapters.md §6 replay):
 // no credentials, no network, byte-identical documents given identical
@@ -53,6 +54,9 @@ func loadReplayRegistry(dir string) (*adapter.Registry, error) {
 			return nil, err
 		}
 		if err := loadJSONL(filepath.Join(base, "cis.jsonl"), &p.CIs); err != nil {
+			return nil, err
+		}
+		if err := loadJSONL(filepath.Join(base, "maintenance.jsonl"), &p.Maintenance); err != nil {
 			return nil, err
 		}
 		if err := registry.Register(p); err != nil {

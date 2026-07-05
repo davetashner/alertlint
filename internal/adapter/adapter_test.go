@@ -54,6 +54,11 @@ func fullFake() *fake.Provider {
 			LinkedRecords: []model.LinkedRecord{},
 		}},
 		CIs: []identity.CI{{ID: "CI001", Name: "checkout-api", Status: "operational"}},
+		Maintenance: []model.MaintenanceWindow{{
+			Envelope:    envelope("fakevendor", "downtime", "dt-1"),
+			StartsAt:    w.Start.Add(48 * time.Hour),
+			MonitorRefs: []model.MonitorRef{{Provider: "fakevendor", NativeID: "m-1"}},
+		}},
 	}
 }
 
@@ -69,8 +74,8 @@ func TestRegistryCapabilityDiscovery(t *testing.T) {
 	}
 
 	caps := adapter.CapabilitiesOf(full)
-	if !caps.Config || !caps.History || !caps.Action || !caps.CI {
-		t.Errorf("full fake should satisfy all four interfaces: %+v", caps)
+	if !caps.Config || !caps.History || !caps.Action || !caps.CI || !caps.Maintenance {
+		t.Errorf("full fake should satisfy all five interfaces: %+v", caps)
 	}
 	if got := len(r.ConfigProviders()); got != 1 {
 		t.Errorf("ConfigProviders = %d, want 1", got)
@@ -83,6 +88,9 @@ func TestRegistryCapabilityDiscovery(t *testing.T) {
 	}
 	if got := len(r.CIProviders()); got != 1 {
 		t.Errorf("CIProviders = %d, want 1", got)
+	}
+	if got := len(r.MaintenanceProviders()); got != 1 {
+		t.Errorf("MaintenanceProviders = %d, want 1", got)
 	}
 }
 

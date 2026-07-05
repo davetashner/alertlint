@@ -10,10 +10,11 @@ import (
 // discovered by type assertion (ADR 0005). Per-service source coverage is
 // derivable from which providers contributed records (ADR 0004).
 type Capabilities struct {
-	Config  bool
-	History bool
-	Action  bool
-	CI      bool
+	Config      bool
+	History     bool
+	Action      bool
+	CI          bool
+	Maintenance bool
 }
 
 // Registry holds registered providers. Registration is compile-time wiring:
@@ -33,7 +34,7 @@ func NewRegistry() *Registry {
 // data-class interface; duplicate ids are a programming error.
 func (r *Registry) Register(p Provider) error {
 	caps := CapabilitiesOf(p)
-	if !caps.Config && !caps.History && !caps.Action && !caps.CI {
+	if !caps.Config && !caps.History && !caps.Action && !caps.CI && !caps.Maintenance {
 		return fmt.Errorf("adapter %q implements no data-class interface", p.ProviderID())
 	}
 	r.mu.Lock()
@@ -118,11 +119,25 @@ func (r *Registry) CIProviders() []CIProvider {
 	return out
 }
 
+// MaintenanceProviders returns registered adapters that serve declared
+// maintenance intervals, ordered by provider id.
+func (r *Registry) MaintenanceProviders() []MaintenanceProvider {
+	var out []MaintenanceProvider
+	for _, id := range r.IDs() {
+		p, _ := r.Get(id)
+		if mp, ok := p.(MaintenanceProvider); ok {
+			out = append(out, mp)
+		}
+	}
+	return out
+}
+
 // CapabilitiesOf reports which data-class interfaces p satisfies.
 func CapabilitiesOf(p Provider) Capabilities {
 	_, config := p.(ConfigProvider)
 	_, history := p.(HistoryProvider)
 	_, action := p.(ActionProvider)
 	_, ci := p.(CIProvider)
-	return Capabilities{Config: config, History: history, Action: action, CI: ci}
+	_, maintenance := p.(MaintenanceProvider)
+	return Capabilities{Config: config, History: history, Action: action, CI: ci, Maintenance: maintenance}
 }

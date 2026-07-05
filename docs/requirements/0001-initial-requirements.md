@@ -150,6 +150,12 @@ Three sub-scores, computed deterministically by the CLI from behavior signals.
   self-healing-vs-noise distinction.
 - `REQ-NOISE-004` Every noise determination carries a **confidence** value and
   the evidence that produced it.
+- `REQ-NOISE-005` **Maintenance awareness** (added 2026-07-04, SRE
+  assessment): fires that occur inside a declared maintenance window
+  (monitor downtimes, paging maintenance windows) must not count toward
+  noise burden by default — deploy-window flapping otherwise inflates
+  scores. Suppression is configurable and every suppressed fire remains
+  visible in evidence (never a silent drop).
 
 ## 7. Criticality & normalization
 
