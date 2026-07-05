@@ -206,20 +206,33 @@ func (fa findingAssembler) missingCriticality(ci identity.CI) output.Finding {
 	}
 }
 
-func (fa findingAssembler) unresolvedArtifact(art identity.Artifact) output.Finding {
+func (fa findingAssembler) unresolvedArtifact(art identity.Artifact, candidates []identity.Candidate) output.Finding {
 	subject := output.Subject{Source: &art.Ref.Source, NativeID: &art.Ref.Key}
+	cands := make([]map[string]any, 0, len(candidates))
+	for _, c := range candidates {
+		cands = append(cands, map[string]any{
+			"ci_id": c.CIID, "ci_name": c.CI, "match_score": c.Score, "method": "fuzzy",
+		})
+	}
+	reason := "no_ci_reference"
+	rationale := fmt.Sprintf("%s %s %q could not be attributed to any CI; its data joins no service until mapped.",
+		art.Ref.Source, art.Ref.Kind, art.Ref.Key)
+	if len(cands) > 0 {
+		reason = "ambiguous_candidates"
+		rationale = fmt.Sprintf("%s %s %q has no CI reference; fuzzy match suggests %d candidate(s). Confirmation required before its data can join scoring.",
+			art.Ref.Source, art.Ref.Kind, art.Ref.Key, len(cands))
+	}
 	return output.Finding{
 		ID:         output.FindingID("identity-unresolved", subject, fa.window),
 		Type:       "identity",
 		Severity:   "low",
 		Confidence: "high",
 		Subject:    subject,
-		Rationale: fmt.Sprintf("%s %s %q could not be attributed to any CI; its data joins no service until mapped.",
-			art.Ref.Source, art.Ref.Kind, art.Ref.Key),
+		Rationale:  rationale,
 		Evidence: mustJSON(identityEvidence{
 			UnresolvedArtifact: map[string]string{"source": art.Ref.Source, "kind": art.Ref.Kind, "native_id": art.Ref.Key},
-			Candidates:         []map[string]any{}, // fuzzy suggester fills these (alertlint-00f)
-			Reason:             "no_ci_reference",
+			Candidates:         cands,
+			Reason:             reason,
 		}),
 	}
 }

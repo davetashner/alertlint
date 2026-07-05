@@ -19,7 +19,7 @@ type serviceJoin struct {
 	fires   map[string][]score.Fire // alert id (config native id or UnjoinedAlertID) -> fires
 }
 
-func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pull pulled, resolved identity.Result) output.Document {
+func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pull pulled, resolved identity.Result, suggested map[identity.DataClass]int) output.Document {
 	join := joinService(mappings, pull)
 	tierKey, tierSource, tierFinding := score.ResolveTier(ci.CriticalityTier, opts.Config)
 
@@ -92,7 +92,7 @@ func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pu
 	archResults := archetype.Evaluate(opts.Library, archInventory, overridesFor(opts.Overrides, ci.ID))
 
 	// Coverage from mapping.
-	coverage := identity.CoverageFor(ci.ID, resolved.Mappings, suggestedFor(resolved, ci.ID))
+	coverage := identity.CoverageFor(ci.ID, resolved.Mappings, suggested)
 
 	doc := output.Document{
 		ContractVersion: output.ContractVersion,
@@ -211,7 +211,7 @@ func buildIdentity(ci identity.CI, tierKey string, tierSource score.CriticalityS
 	return id
 }
 
-func buildUnresolvedDocument(opts Options, resolved identity.Result) output.Document {
+func buildUnresolvedDocument(opts Options, resolved identity.Result, suggestions []identity.Suggestion) output.Document {
 	doc := output.Document{
 		ContractVersion: output.ContractVersion,
 		Identity: output.Identity{
@@ -223,9 +223,9 @@ func buildUnresolvedDocument(opts Options, resolved identity.Result) output.Docu
 	}
 	window := output.Window{Start: opts.Window.Start, End: opts.Window.End, Days: int(opts.Window.End.Sub(opts.Window.Start).Hours() / 24)}
 	fa := findingAssembler{window: window, cfg: opts.Config}
-	for _, art := range resolved.Unresolved {
-		doc.Identity.Mapping.BySource[art.Ref.Source]++
-		doc.Findings = append(doc.Findings, fa.unresolvedArtifact(art))
+	for _, sg := range suggestions {
+		doc.Identity.Mapping.BySource[sg.Artifact.Ref.Source]++
+		doc.Findings = append(doc.Findings, fa.unresolvedArtifact(sg.Artifact, sg.Candidates))
 	}
 	for _, f := range resolved.Findings {
 		doc.Findings = append(doc.Findings, fa.identityFinding(f))
@@ -357,12 +357,6 @@ func overridesFor(all []archetype.Override, ciID string) []archetype.Override {
 		}
 	}
 	return out
-}
-
-func suggestedFor(identity.Result, string) map[identity.DataClass]int {
-	// Fuzzy suggestions are wired by the fuzzy-suggester bead; until then
-	// the candidate count is zero.
-	return map[identity.DataClass]int{}
 }
 
 func availPtr(s score.SubScore) *float64 {
