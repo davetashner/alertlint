@@ -11,6 +11,7 @@ import (
 
 	"github.com/davetashner/alertlint/internal/adapter"
 	"github.com/davetashner/alertlint/internal/adapter/datadog"
+	"github.com/davetashner/alertlint/internal/adapter/newrelic"
 	"github.com/davetashner/alertlint/internal/adapter/pagerduty"
 	"github.com/davetashner/alertlint/internal/adapter/servicenow"
 	"github.com/davetashner/alertlint/internal/archetype"
@@ -146,6 +147,13 @@ func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
 		}
 		registered++
 	}
+	if key := os.Getenv("NEW_RELIC_API_KEY"); key != "" {
+		if err := registry.Register(&newrelic.Adapter{APIKey: key}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return nil, err
+		}
+		registered++
+	}
 	if token := os.Getenv("PAGERDUTY_TOKEN"); token != "" {
 		if err := registry.Register(&pagerduty.Adapter{Token: token}); err != nil {
 			fmt.Fprintln(stderr, err)
@@ -163,7 +171,7 @@ func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
 		registered++
 	}
 	if registered == 0 {
-		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
+		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, NEW_RELIC_API_KEY, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
 		return nil, nil
 	}
 	return registry, nil

@@ -1,0 +1,10 @@
+{ "nrql_conditions": [
+  {
+    "id": 998811, "name": "pmts-api-golden p95 duration", "enabled": true,
+    "terms": [
+      { "threshold": "1.5", "duration": "10", "operator": "above", "priority": "critical", "time_function": "all" },
+      { "threshold": "1.0", "duration": "10", "operator": "above", "priority": "warning", "time_function": "all" }
+    ],
+    "nrql": { "query": "SELECT percentile(duration, 95) FROM Transaction WHERE appName = 'Payments API'" }
+  }
+] }
