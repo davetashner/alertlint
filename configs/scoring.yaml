@@ -8,7 +8,7 @@
 # Defaults are the spec's proposed starting points, pending calibration against
 # a real pilot corpus (spec Open questions).
 
-scoring_config_version: 1
+scoring_config_version: 2
 
 # Sub-score weights (REQ-SCORE-004). Noise carries the most weight in v1
 # because alert fatigue is the presenting problem.
@@ -28,6 +28,9 @@ noise:
   never_acked_grace_minutes: 30
   high_reassignment_count: 3
   tier_noise_budget_per_week: { tier1: 2.0, tier2: 3.0, tier3: 5.0, tier4: 8.0 }
+  # Fires inside declared maintenance windows (REQ-NOISE-005):
+  # exclude (default) keeps them out of scoring but visible in evidence.
+  maintenance_policy: exclude
 
 # Behavior-inferred threshold heuristics TH-1..TH-4 (REQ-THRESH-001).
 threshold:

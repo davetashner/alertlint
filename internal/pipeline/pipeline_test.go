@@ -478,3 +478,68 @@ func TestPagingHistoryWinsOverMonitorHistory(t *testing.T) {
 		t.Errorf("dormant = %d — monitor-side history should feed the latency monitor", doc.Scores.Inputs.AlertsDormant)
 	}
 }
+
+// REQ-NOISE-005: fires inside declared maintenance windows are excluded
+// from scoring (default policy) and surfaced in scores.inputs.
+func TestMaintenanceSuppression(t *testing.T) {
+	dirA, dirB := t.TempDir(), t.TempDir()
+
+	// Baseline run: 14 ambiguity fires, all scored.
+	optsA := testOptions(t, dirA)
+	if _, err := Run(optsA); err != nil {
+		t.Fatal(err)
+	}
+	var base output.Document
+	rawA, _ := os.ReadFile(filepath.Join(dirA, "checkout-api.CI0012345.json"))
+	if err := json.Unmarshal(rawA, &base); err != nil {
+		t.Fatal(err)
+	}
+
+	// Same corpus plus a maintenance window covering the first day of the
+	// CPU pile (fires at day 20 in the fixture).
+	optsB := testOptions(t, dirB)
+	ddProvider := "datadog"
+	monitorID := "84312077"
+	for _, p := range optsB.Registry.ConfigProviders() {
+		if p.ProviderID() == "datadog" {
+			fp := p.(*fake.Provider)
+			end := optsB.Window.Start.AddDate(0, 0, 21)
+			fp.Maintenance = []model.MaintenanceWindow{{
+				Envelope:    envelope("datadog", "downtime", "dt-1", hints(nil)),
+				StartsAt:    optsB.Window.Start.AddDate(0, 0, 20),
+				EndsAt:      &end,
+				MonitorRefs: []model.MonitorRef{{Provider: ddProvider, NativeID: monitorID}},
+			}}
+		}
+	}
+	// The PD fires reference the monitor by name only; give the fixture's
+	// events an id-bearing alert_ref so the window can match them.
+	for _, p := range optsB.Registry.HistoryProviders() {
+		if p.ProviderID() == "pagerduty" {
+			fp := p.(*fake.Provider)
+			for i := range fp.Events {
+				fp.Events[i].AlertRef.Provider = &ddProvider
+				fp.Events[i].AlertRef.NativeID = &monitorID
+			}
+		}
+	}
+	if _, err := Run(optsB); err != nil {
+		t.Fatal(err)
+	}
+	var doc output.Document
+	rawB, _ := os.ReadFile(filepath.Join(dirB, "checkout-api.CI0012345.json"))
+	if err := json.Unmarshal(rawB, &doc); err != nil {
+		t.Fatal(err)
+	}
+
+	if doc.Scores.Inputs.FiresInMaintenance == 0 {
+		t.Fatal("suppressed fires must be surfaced in scores.inputs.fires_in_maintenance")
+	}
+	if doc.Scores.Noise == nil || base.Scores.Noise == nil {
+		t.Fatal("noise scores missing")
+	}
+	if *doc.Scores.Noise <= *base.Scores.Noise {
+		t.Errorf("suppressing maintenance fires must not lower the noise score: %v vs %v",
+			*doc.Scores.Noise, *base.Scores.Noise)
+	}
+}

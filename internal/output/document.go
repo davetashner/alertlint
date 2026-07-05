@@ -97,6 +97,9 @@ type ScoreInputs struct {
 	AlertsScored           int `json:"alerts_scored"`
 	AlertsDormant          int `json:"alerts_dormant"`
 	AlertsInsufficientData int `json:"alerts_insufficient_data"`
+	// FiresInMaintenance counts fires suppressed by declared maintenance
+	// windows (REQ-NOISE-005) — additive contract field, minor version.
+	FiresInMaintenance int `json:"fires_in_maintenance"`
 }
 
 // Finding is one self-contained, greppable record of the frozen taxonomy.

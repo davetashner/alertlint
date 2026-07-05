@@ -14,8 +14,11 @@ func TestCommittedDefaultsMatchSpec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	if c.ScoringConfigVersion != 1 {
-		t.Errorf("version = %d, want 1", c.ScoringConfigVersion)
+	if c.ScoringConfigVersion != 2 {
+		t.Errorf("version = %d, want 2", c.ScoringConfigVersion)
+	}
+	if !c.ExcludeMaintenance() {
+		t.Error("default maintenance policy must exclude (REQ-NOISE-005)")
 	}
 	if c.Weights != (Weights{Noise: 45, Coverage: 30, Threshold: 25}) {
 		t.Errorf("weights = %+v, want 45/30/25 (REQ-SCORE-004)", c.Weights)
