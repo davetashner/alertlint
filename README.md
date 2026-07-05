@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/social-preview.png" alt="alertlint — score alerting quality, cut the noise" width="820">
+</p>
+
 # alertlint
 
 A skill/CLI that analyzes a service's alert configurations alongside its prior alerting history — and the actions taken (or not taken) for each alert — to score services and recommend concrete improvements.
