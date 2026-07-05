@@ -49,54 +49,68 @@ type Worklist struct {
 // dedups on identity.ci.id (newest metadata.run.timestamp wins whole —
 // documents are never field-merged), and ranks. Mixed contract majors are
 // an error, not a silent skip.
-func Aggregate(dirs []string) (Worklist, error) {
-	var wl Worklist
-	type kept struct {
-		doc  Document
-		file string
-	}
-	newest := map[string]kept{}
-	major := ""
+type keptDoc struct {
+	doc  Document
+	file string
+}
 
+// loadNewest reads every document under dirs with newest-run-wins dedup
+// per CI (documents are never field-merged) and mixed-major rejection —
+// the shared loading semantics of worklist and diff.
+func loadNewest(dirs []string) (map[string]keptDoc, int, int, error) {
+	newest := map[string]keptDoc{}
+	major := ""
+	unresolved, deduped := 0, 0
 	for _, dir := range dirs {
 		paths, err := filepath.Glob(filepath.Join(dir, "*.json"))
 		if err != nil {
-			return wl, err
+			return nil, 0, 0, err
 		}
 		sort.Strings(paths)
 		for _, path := range paths {
 			raw, err := os.ReadFile(path)
 			if err != nil {
-				return wl, err
+				return nil, 0, 0, err
 			}
 			var doc Document
 			if err := json.Unmarshal(raw, &doc); err != nil {
-				return wl, fmt.Errorf("%s: %w", path, err)
+				return nil, 0, 0, fmt.Errorf("%s: %w", path, err)
 			}
 			m, _, _ := strings.Cut(doc.ContractVersion, ".")
 			if major == "" {
 				major = m
 			} else if m != major {
-				return wl, fmt.Errorf("%s: contract major %s mixed with %s — re-run analyze with a matching tool version", path, m, major)
+				return nil, 0, 0, fmt.Errorf("%s: contract major %s mixed with %s — re-run analyze with a matching tool version", path, m, major)
 			}
 
 			if doc.Identity.CI == nil {
-				wl.UnresolvedArtifacts += len(doc.Findings)
+				unresolved += len(doc.Findings)
 				continue
 			}
 			id := doc.Identity.CI.ID
 			prev, seen := newest[id]
 			if seen {
-				wl.Deduped++
+				deduped++
 				// Newest run wins whole; ties keep the first (sorted
 				// path order keeps this deterministic).
 				if !doc.Metadata.Run.Timestamp.After(prev.doc.Metadata.Run.Timestamp) {
 					continue
 				}
 			}
-			newest[id] = kept{doc: doc, file: path}
+			newest[id] = keptDoc{doc: doc, file: path}
 		}
 	}
+	return newest, unresolved, deduped, nil
+}
+
+func Aggregate(dirs []string) (Worklist, error) {
+	var wl Worklist
+	newest, unresolved, deduped, err := loadNewest(dirs)
+	if err != nil {
+		return wl, err
+	}
+	wl.UnresolvedArtifacts = unresolved
+	wl.Deduped = deduped
 
 	for _, k := range newest {
 		entry := WorklistEntry{
