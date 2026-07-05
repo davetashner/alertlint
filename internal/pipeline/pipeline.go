@@ -219,6 +219,12 @@ func pullAll(opts Options) (pulled, error) {
 			p.configs[add(rec.Envelope, identity.ClassConfig)] = rec
 		}
 	}
+	// History pulls collect first, then dedup: when paging history (any
+	// non-config-source event) already covers a monitor via alert_ref,
+	// monitor-side episodes for that monitor are dropped — paging history
+	// is authoritative because it carries the response trail
+	// (REQ-SRC-008; provider-adapters.md dedup rule).
+	var allEvents []model.AlertEvent
 	for _, hp := range opts.Registry.HistoryProviders() {
 		noteSource(hp)
 		for rec, err := range hp.FetchEvents(opts.Scope, opts.Window) {
@@ -228,8 +234,49 @@ func pullAll(opts Options) (pulled, error) {
 			if err := record(hp.ProviderID(), "events", rec); err != nil {
 				return p, err
 			}
-			p.events[add(rec.Envelope, identity.ClassHistory)] = rec
+			allEvents = append(allEvents, rec)
 		}
+	}
+	// Paging providers are the ones that also carry response trails
+	// (capability-discovered); their events are authoritative. Monitor
+	// history from config-side providers referencing the same monitor —
+	// by native id or by name, since paging integrations often preserve
+	// only the name — is a duplicate stream and is dropped.
+	// An event is monitor-side history when its alert_ref points back at
+	// its own source (the monitor observing itself); everything else is
+	// paging-system history and is authoritative. Paging integrations
+	// often preserve only the monitor name, so paged keys cover both the
+	// (provider, native_id) form and the name form.
+	monitorSide := func(rec model.AlertEvent) bool {
+		return rec.AlertRef.Provider != nil && *rec.AlertRef.Provider == rec.Source.Provider
+	}
+	pagedMonitors := map[string]bool{}
+	for _, rec := range allEvents {
+		if monitorSide(rec) {
+			continue
+		}
+		if rec.AlertRef.Provider != nil && rec.AlertRef.NativeID != nil {
+			pagedMonitors["id\x00"+*rec.AlertRef.Provider+"\x00"+*rec.AlertRef.NativeID] = true
+		}
+		if rec.AlertRef.Name != nil {
+			pagedMonitors["name\x00"+*rec.AlertRef.Name] = true
+		}
+	}
+	for _, rec := range allEvents {
+		if monitorSide(rec) {
+			dup := false
+			if rec.AlertRef.NativeID != nil &&
+				pagedMonitors["id\x00"+*rec.AlertRef.Provider+"\x00"+*rec.AlertRef.NativeID] {
+				dup = true
+			}
+			if rec.AlertRef.Name != nil && pagedMonitors["name\x00"+*rec.AlertRef.Name] {
+				dup = true
+			}
+			if dup {
+				continue // monitor-side duplicate of a paged episode stream
+			}
+		}
+		p.events[add(rec.Envelope, identity.ClassHistory)] = rec
 	}
 	for _, ap := range opts.Registry.ActionProviders() {
 		noteSource(ap)

@@ -95,6 +95,12 @@ later behind a common interface.
 **Alerting history (what fired, when, how often)**
 - `REQ-SRC-003` Tier-1: ServiceNow, PagerDuty.
 - `REQ-SRC-004` Tier-2 (later): BMC Helix, Uptime Robot.
+- `REQ-SRC-008` **Monitor-side firing history is Tier-1** (added 2026-07-04,
+  SRE assessment): alerts that never page — chat/email-only routing — must
+  still contribute firing history and auto-resolve signals (REQ-NOISE-001),
+  or the noisiest alert class is invisible to scoring. First source: Datadog
+  alert events. When paging history and monitor history carry the same
+  episodes, paging history is authoritative (richer response trail).
 
 **Action taken (human response signal)**
 - `REQ-SRC-005` Tier-1: ServiceNow, PagerDuty.
