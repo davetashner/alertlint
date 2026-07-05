@@ -78,3 +78,4 @@ jobs:
             --out /tmp/contract-corpus --run-timestamp 2026-07-04T18:00:00Z \
             --identity-conventions fixtures/demo/identity-conventions.yaml
           scripts/check_contract.sh /tmp/contract-corpus
+          go run ./cmd/alertlint validate /tmp/contract-corpus

@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/davetashner/alertlint/schemas/output-contract-v1.json",
+  "title": "alertlint per-service output document, contract major 1",
+  "description": "docs/specs/output-contract.md. Tolerant-reader posture: unknown additive fields are legal everywhere; enums and required keys are the contract.",
+  "type": "object",
+  "required": ["contract_version", "identity", "scores", "findings", "metadata"],
+  "properties": {
+    "contract_version": { "type": "string", "pattern": "^1\\." },
+    "identity": {
+      "type": "object",
+      "required": ["ci", "artifacts", "mapping"],
+      "properties": {
+        "ci": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["id", "name", "criticality_tier", "criticality_source"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "name": { "type": "string", "minLength": 1 },
+                "criticality_tier": { "type": "integer", "minimum": 0 },
+                "criticality_source": { "enum": ["cmdb", "default"] }
+              }
+            }
+          ]
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "kind", "native_id", "resolution", "analysis_state"],
+            "properties": {
+              "source": { "type": "string", "minLength": 1 },
+              "kind": { "enum": ["alert_config", "alert_event", "response_record"] },
+              "native_id": { "type": "string", "minLength": 1 },
+              "native_name": { "type": ["string", "null"] },
+              "resolution": {
+                "type": "object",
+                "required": ["method", "confidence"],
+                "properties": {
+                  "method": { "enum": ["exact", "confirmed", "convention"] },
+                  "confidence": { "enum": ["high", "medium"] },
+                  "rule": { "type": ["string", "null"] }
+                }
+              },
+              "analysis_state": {
+                "oneOf": [
+                  { "type": "null" },
+                  { "enum": ["scored", "dormant", "insufficient_data", "scoreable", "dormant_healthy"] }
+                ]
+              }
+            }
+          }
+        },
+        "mapping": {
+          "type": "object",
+          "required": ["resolved_count", "candidate_count", "coverage_note", "by_source"],
+          "properties": {
+            "resolved_count": { "type": "integer", "minimum": 0 },
+            "candidate_count": { "type": "integer", "minimum": 0 },
+            "coverage_note": { "enum": ["full", "partial"] },
+            "by_source": { "type": "object", "additionalProperties": { "type": "integer" } }
+          }
+        }
+      }
+    },
+    "scores": {
+      "type": "object",
+      "required": ["noise", "coverage", "threshold", "composite", "criticality_tier", "priority_score", "inputs"],
+      "properties": {
+        "noise": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "threshold": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "composite": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "criticality_tier": { "type": "integer", "minimum": 0 },
+        "priority_score": { "type": ["number", "null"], "minimum": 0 },
+        "inputs": {
+          "type": "object",
+          "required": ["alerts_scored", "alerts_dormant", "alerts_insufficient_data"],
+          "properties": {
+            "alerts_scored": { "type": "integer", "minimum": 0 },
+            "alerts_dormant": { "type": "integer", "minimum": 0 },
+            "alerts_insufficient_data": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "severity", "confidence", "subject", "rationale", "evidence", "proposed_change"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^ald-[0-9a-f]{8}$" },
+          "type": { "enum": ["noise", "coverage", "threshold", "identity"] },
+          "severity": { "enum": ["critical", "high", "medium", "low"] },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "subject": {
+            "type": "object",
+            "properties": {
+              "source": { "type": ["string", "null"] },
+              "native_id": { "type": ["string", "null"] },
+              "signal": { "type": ["string", "null"] }
+            }
+          },
+          "rationale": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "object" },
+          "proposed_change": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["kind", "target", "current", "proposed", "rationale", "generated_by"],
+                "properties": {
+                  "kind": { "enum": ["threshold_update", "duration_update", "delete_alert", "add_alert", "routing_change", "grouping", "mapping_add"] },
+                  "target": {
+                    "type": "object",
+                    "required": ["source", "native_id"],
+                    "properties": {
+                      "source": { "type": "string", "minLength": 1 },
+                      "native_id": { "type": "string", "minLength": 1 },
+                      "path": { "type": ["string", "null"] }
+                    }
+                  },
+                  "rationale": { "type": "string", "minLength": 1 },
+                  "generated_by": { "enum": ["cli", "skill"] },
+                  "diff": { "type": ["string", "null"] }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["run", "window", "config", "archetype_library_version", "convention_ruleset_version", "sources"],
+      "properties": {
+        "run": {
+          "type": "object",
+          "required": ["timestamp", "tool_version", "invocation_id"],
+          "properties": {
+            "timestamp": { "type": "string", "format": "date-time" },
+            "tool_version": { "type": "string", "minLength": 1 },
+            "invocation_id": { "type": "string", "minLength": 1 }
+          }
+        },
+        "window": {
+          "type": "object",
+          "required": ["start", "end", "days"],
+          "properties": {
+            "start": { "type": "string", "format": "date-time" },
+            "end": { "type": "string", "format": "date-time" },
+            "days": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "config": {
+          "type": "object",
+          "required": ["weights", "priority_formula_version", "config_hash"],
+          "properties": {
+            "weights": {
+              "type": "object",
+              "required": ["noise", "coverage", "threshold"],
+              "properties": {
+                "noise": { "type": "number" },
+                "coverage": { "type": "number" },
+                "threshold": { "type": "number" }
+              }
+            },
+            "priority_formula_version": { "type": "string" },
+            "config_hash": { "type": "string", "pattern": "^sha256:" }
+          }
+        },
+        "archetype_library_version": { "type": "string", "minLength": 1 },
+        "convention_ruleset_version": { "type": "string", "minLength": 1 },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "adapter_version", "canonical_schema_version", "snapshot_key"],
+            "properties": {
+              "source": { "type": "string", "minLength": 1 },
+              "adapter_version": { "type": "string" },
+              "canonical_schema_version": { "type": "string" },
+              "snapshot_key": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

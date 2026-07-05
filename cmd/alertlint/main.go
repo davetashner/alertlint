@@ -20,6 +20,7 @@ Commands:
   analyze    Score services and emit per-service JSON documents (docs/specs/output-contract.md)
   worklist   Aggregate per-service documents into a prioritized worklist
   identity   Manage artifact-to-CI identity mappings (docs/specs/identity-resolution.md)
+  validate   Check documents against the output-contract JSON Schema
   version    Print the alertlint version
   help       Show this help
 `
@@ -46,6 +47,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runWorklist(args[1:], stdout, stderr)
 	case "identity":
 		return runIdentity(args[1:], stdout, stderr)
+	case "validate":
+		return runValidate(args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "alertlint: unknown command %q\n\n", args[0])
 		fmt.Fprint(stderr, usageText)
