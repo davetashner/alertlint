@@ -9,7 +9,9 @@ import (
 	"os"
 )
 
-const version = "0.0.1-dev"
+// version is stamped at release time via
+// -ldflags "-X main.version=vX.Y.Z"; dev builds report "dev".
+var version = "dev"
 
 const usageText = `alertlint — alerting-quality analysis
 

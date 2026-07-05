@@ -1,0 +1,40 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build static binaries
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for os in darwin linux windows; do
+            for arch in amd64 arm64; do
+              ext=""
+              [ "$os" = "windows" ] && ext=".exe"
+              out="dist/alertlint_${GITHUB_REF_NAME}_${os}_${arch}${ext}"
+              CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+                go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
+                -o "$out" ./cmd/alertlint
+            done
+          done
+          (cd dist && shasum -a 256 * > checksums.txt)
+      - name: Smoke-test the linux binary reports its version
+        run: |
+          test "$(GOFLAGS= dist/alertlint_${GITHUB_REF_NAME}_linux_amd64 version)" = "${GITHUB_REF_NAME}"
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
