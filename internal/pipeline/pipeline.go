@@ -125,6 +125,12 @@ func Run(opts Options) (Result, error) {
 		byCI[m.CIID] = append(byCI[m.CIID], m)
 	}
 
+	// Shared-monitor membership (ADR 0006): a config belongs to every CI
+	// whose events reference it, in addition to the CI its own mapping
+	// resolved to. Fires already attribute per event; membership restores
+	// config context (cold-start, thresholds, archetypes) to each member.
+	members := configMembership(byCI, pull)
+
 	ciIDs := make([]string, 0, len(byCI))
 	for id := range byCI {
 		ciIDs = append(ciIDs, id)
@@ -138,7 +144,7 @@ func Run(opts Options) (Result, error) {
 	// 4. Score and emit one document per CI.
 	for _, ciID := range ciIDs {
 		ci, _ := inventory.ByID(ciID)
-		doc := buildDocument(opts, ci, byCI[ciID], pull, resolved, suggestedCounts[ciID])
+		doc := buildDocument(opts, ci, byCI[ciID], pull, resolved, suggestedCounts[ciID], members)
 		buf, err := output.Marshal(doc)
 		if err != nil {
 			return res, fmt.Errorf("marshal %s: %w", ciID, err)
@@ -172,6 +178,71 @@ func Run(opts Options) (Result, error) {
 type SourceCache struct {
 	Writer *cache.Writer
 	Key    cache.Key
+}
+
+// configMembership maps each config artifact to the set of CIs that own
+// it: the CI its own mapping resolved to plus every CI with at least one
+// event referencing it by alert_ref id or name (ADR 0006).
+func configMembership(byCI map[string][]identity.Mapping, pull pulled) map[identity.ArtifactRef]map[string]bool {
+	members := map[identity.ArtifactRef]map[string]bool{}
+	add := func(ref identity.ArtifactRef, ci string) {
+		if members[ref] == nil {
+			members[ref] = map[string]bool{}
+		}
+		members[ref][ci] = true
+	}
+	for ciID, mappings := range byCI {
+		for _, m := range mappings {
+			switch m.DataClass {
+			case identity.ClassConfig:
+				if _, ok := pull.configs[m.Artifact]; ok {
+					add(m.Artifact, ciID)
+				}
+			case identity.ClassHistory:
+				ev, ok := pull.events[m.Artifact]
+				if !ok {
+					continue
+				}
+				if ref, found := referencedConfig(ev, pull); found {
+					add(ref, ciID)
+				}
+			}
+		}
+	}
+	return members
+}
+
+// referencedConfig finds the pulled config an event's alert_ref points
+// at: exact (provider, native id) first, then name (paging integrations
+// often preserve only the monitor name). Deterministic: candidates are
+// scanned in sorted key order.
+func referencedConfig(ev model.AlertEvent, pull pulled) (identity.ArtifactRef, bool) {
+	refs := make([]identity.ArtifactRef, 0, len(pull.configs))
+	for ref := range pull.configs {
+		refs = append(refs, ref)
+	}
+	sort.Slice(refs, func(i, j int) bool {
+		if refs[i].Source != refs[j].Source {
+			return refs[i].Source < refs[j].Source
+		}
+		return refs[i].Key < refs[j].Key
+	})
+	if ev.AlertRef.NativeID != nil {
+		for _, ref := range refs {
+			if ref.Key == *ev.AlertRef.NativeID &&
+				(ev.AlertRef.Provider == nil || ref.Source == *ev.AlertRef.Provider) {
+				return ref, true
+			}
+		}
+	}
+	if ev.AlertRef.Name != nil {
+		for _, ref := range refs {
+			if pull.configs[ref].Name == *ev.AlertRef.Name {
+				return ref, true
+			}
+		}
+	}
+	return identity.ArtifactRef{}, false
 }
 
 // pulled holds all canonical records of one run, keyed for joining.

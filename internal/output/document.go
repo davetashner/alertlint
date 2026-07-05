@@ -62,6 +62,9 @@ type Artifact struct {
 	// AnalysisState is meaningful only for kind=="alert_config"
 	// (scored | dormant | insufficient_data); null otherwise.
 	AnalysisState *string `json:"analysis_state"`
+	// Shared marks a config that belongs to more than one service —
+	// fires attribute per event, membership by reference (ADR 0006).
+	Shared bool `json:"shared,omitempty"`
 }
 
 // Resolution records how an artifact joined (fuzzy NEVER joins — ADR 0002).

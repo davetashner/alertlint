@@ -82,6 +82,11 @@ response.
   identity`), not a silent drop. Coverage of the mapping is reported per service.
 - `REQ-ID-004` Criticality tier is read from the CMDB CI and drives score
   normalization and ranking (see §7).
+- `REQ-ID-005` **Shared monitors attribute per event** (added 2026-07-04,
+  SRE assessment; ADR 0006): a multi-service monitor's fires land on the
+  service whose group produced them, its config joins every service whose
+  events reference it, and sharing is visible in output — never divided,
+  never duplicated, never silently single-homed.
 
 ## 5. Data sources (tiered)
 
