@@ -18,7 +18,7 @@ func TestRun(t *testing.T) {
 		{name: "help", args: []string{"help"}, wantCode: 0, wantOut: "Usage:"},
 		{name: "analyze requires tenant", args: []string{"analyze"}, wantCode: 2, wantErrOut: "--tenant is required"},
 		{name: "worklist requires dirs", args: []string{"worklist"}, wantCode: 2, wantErrOut: "corpus directory"},
-		{name: "identity stub", args: []string{"identity"}, wantCode: 1, wantErrOut: "not implemented"},
+		{name: "identity usage", args: []string{"identity"}, wantCode: 2, wantErrOut: "identity confirm"},
 		{name: "unknown command", args: []string{"bogus"}, wantCode: 2, wantErrOut: `unknown command "bogus"`},
 	}
 	for _, tt := range tests {

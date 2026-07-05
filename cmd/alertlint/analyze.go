@@ -37,6 +37,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	ciTagKeys := fs.String("ci-tag-keys", "cmdb_ci,ci_id", "comma-separated tag keys treated as explicit CI references")
 	replayDir := fs.String("replay", "", "offline mode: read canonical JSONL fixtures from this corpus directory instead of live APIs")
 	overridesPath := fs.String("archetype-overrides", "", "archetype override file (paths C/D of REQ-COV-003)")
+	mappingsPath := fs.String("identity-mappings", "", "confirmed-mappings file (strategy 2; missing file = empty ratchet)")
 	runTimestamp := fs.String("run-timestamp", "", "RFC3339 run timestamp override (deterministic runs; default now)")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -60,6 +61,14 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
+	}
+	var confirmed []identity.ConfirmedMapping
+	if *mappingsPath != "" {
+		_, confirmed, err = identity.LoadMappings(*mappingsPath)
+		if err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
 	}
 	var overrides []archetype.Override
 	if *overridesPath != "" {
@@ -105,6 +114,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 		Library:    lib,
 		Overrides:  overrides,
 		Convention: conv,
+		Confirmed:  confirmed,
 		Resolver:   identity.ResolverConfig{CIIDTagKeys: splitComma(*ciTagKeys)},
 		Fuzzy:      identity.DefaultFuzzyConfig(),
 		OutDir:     *out,
