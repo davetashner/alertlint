@@ -8,7 +8,7 @@
 # Defaults are the spec's proposed starting points, pending calibration against
 # a real pilot corpus (spec Open questions).
 
-scoring_config_version: 2
+scoring_config_version: 3
 
 # Sub-score weights (REQ-SCORE-004). Noise carries the most weight in v1
 # because alert fatigue is the presenting problem.
@@ -56,6 +56,14 @@ confidence:
 # Determinations at/below this are tagged low_confidence — the designed
 # CLI -> skill handoff seam (ADR 0003).
 low_confidence_ceiling: 0.50
+
+# Off-hours definition for burden evidence (evidence-only; no score
+# weighting until calibrated). Nightly window wraps midnight.
+offhours:
+  timezone: UTC
+  start_hour: 20
+  end_hour: 8
+  weekend_is_offhours: true
 
 # Numeric confidence -> contract band mapping (docs/specs/output-contract.md):
 # >= high_floor -> "high"; <= low_confidence_ceiling -> "low"; else "medium".

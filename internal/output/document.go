@@ -100,6 +100,10 @@ type ScoreInputs struct {
 	// FiresInMaintenance counts fires suppressed by declared maintenance
 	// windows (REQ-NOISE-005) — additive contract field, minor version.
 	FiresInMaintenance int `json:"fires_in_maintenance"`
+	// FiresOffHours counts scored fires inside the configured off-hours
+	// window — the pages-that-wake-people burden (additive field;
+	// evidence-only, no score weighting until calibrated).
+	FiresOffHours int `json:"fires_off_hours"`
 }
 
 // Finding is one self-contained, greppable record of the frozen taxonomy.

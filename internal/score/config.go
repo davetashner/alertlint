@@ -34,6 +34,7 @@ type Config struct {
 	Confidence           Confidence      `yaml:"confidence"`
 	LowConfidenceCeiling float64         `yaml:"low_confidence_ceiling"`
 	ConfidenceBands      ConfidenceBands `yaml:"confidence_bands"`
+	OffHours             OffHours        `yaml:"offhours"`
 }
 
 // Weights are the sub-score weights (REQ-SCORE-004).
@@ -122,7 +123,7 @@ func DecodeConfig(r io.Reader) (Config, error) {
 
 // Validate enforces internal consistency so the engine can trust every
 // constant without re-checking.
-func (c Config) Validate() error {
+func (c *Config) Validate() error {
 	if c.ScoringConfigVersion < 1 {
 		return fmt.Errorf("scoring_config_version %d: must be >= 1", c.ScoringConfigVersion)
 	}
@@ -175,6 +176,9 @@ func (c Config) Validate() error {
 	if c.ConfidenceBands.HighFloor <= c.LowConfidenceCeiling || c.ConfidenceBands.HighFloor > 1 {
 		return fmt.Errorf("confidence_bands.high_floor %v must be in (low_confidence_ceiling %v, 1]",
 			c.ConfidenceBands.HighFloor, c.LowConfidenceCeiling)
+	}
+	if err := c.OffHours.validate(); err != nil {
+		return err
 	}
 	return nil
 }

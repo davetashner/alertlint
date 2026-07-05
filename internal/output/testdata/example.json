@@ -55,7 +55,7 @@
     "composite": 42.6,
     "criticality_tier": 1,
     "priority_score": 86.1,
-    "inputs": { "alerts_scored": 11, "alerts_dormant": 2, "alerts_insufficient_data": 1, "fires_in_maintenance": 0 }
+    "inputs": { "alerts_scored": 11, "alerts_dormant": 2, "alerts_insufficient_data": 1, "fires_in_maintenance": 0, "fires_off_hours": 5 }
   },
   "findings": [
     {

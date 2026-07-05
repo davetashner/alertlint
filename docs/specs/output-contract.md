@@ -136,7 +136,8 @@ All scores are floats in `[0, 100]`. Sub-scores and composite are **quality** sc
     "alerts_scored": 11,
     "alerts_dormant": 2,         //    config exists, zero fires in window — NOT penalized, NOT hidden
     "alerts_insufficient_data": 1,
-    "fires_in_maintenance": 0
+    "fires_in_maintenance": 0,
+    "fires_off_hours": 5
   }
 }
 ```
@@ -306,7 +307,7 @@ Artifacts with **no** CI candidate at all cannot live in any per-service documen
     "composite": 42.6,
     "criticality_tier": 1,
     "priority_score": 86.1,
-    "inputs": { "alerts_scored": 11, "alerts_dormant": 2, "alerts_insufficient_data": 1, "fires_in_maintenance": 0 }
+    "inputs": { "alerts_scored": 11, "alerts_dormant": 2, "alerts_insufficient_data": 1, "fires_in_maintenance": 0, "fires_off_hours": 5 }
   },
   "findings": [
     {

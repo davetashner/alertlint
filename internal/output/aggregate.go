@@ -23,6 +23,7 @@ type WorklistEntry struct {
 	Composite     *float64 `json:"composite"`
 	Tier          int      `json:"criticality_tier"`
 	Findings      int      `json:"findings"`
+	FiresOffHours int      `json:"fires_off_hours"`
 	RunTimestamp  string   `json:"run_timestamp"`
 	SourceFile    string   `json:"source_file"`
 }
@@ -120,6 +121,7 @@ func Aggregate(dirs []string) (Worklist, error) {
 			Composite:     k.doc.Scores.Composite,
 			Tier:          k.doc.Scores.CriticalityTier,
 			Findings:      len(k.doc.Findings),
+			FiresOffHours: k.doc.Scores.Inputs.FiresOffHours,
 			RunTimestamp:  k.doc.Metadata.Run.Timestamp.Format("2006-01-02T15:04:05Z07:00"),
 			SourceFile:    k.file,
 		}
