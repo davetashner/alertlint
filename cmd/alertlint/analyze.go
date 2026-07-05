@@ -129,6 +129,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 		Resolver:   identity.ResolverConfig{CIIDTagKeys: splitComma(*ciTagKeys)},
 		Fuzzy:      identity.DefaultFuzzyConfig(),
 		OutDir:     *out,
+		Log:        stderr,
 		RunMeta: output.Run{
 			Timestamp:    now,
 			ToolVersion:  version,
@@ -153,13 +154,14 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 			opts.Cache[providerID] = &pipeline.SourceCache{Writer: w, Key: key}
 		}
 	}
+	started := time.Now()
 	res, err := pipeline.Run(opts)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "analyzed %d service(s), %d unresolved artifact(s); %d document(s) written to %s\n",
-		res.Services, res.Unresolved, len(res.Documents), *out)
+	fmt.Fprintf(stdout, "analyzed %d service(s), %d unresolved artifact(s); %d document(s) written to %s in %s\n",
+		res.Services, res.Unresolved, len(res.Documents), *out, time.Since(started).Round(time.Millisecond))
 	return 0
 }
 
