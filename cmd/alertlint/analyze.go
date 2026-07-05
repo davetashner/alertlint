@@ -13,6 +13,8 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	cloudwatchsdk "github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 
+	"github.com/davetashner/alertlint/internal/cache"
+
 	"github.com/davetashner/alertlint/internal/adapter"
 	cwadapter "github.com/davetashner/alertlint/internal/adapter/cloudwatch"
 	"github.com/davetashner/alertlint/internal/adapter/datadog"
@@ -45,6 +47,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	replayDir := fs.String("replay", "", "offline mode: read canonical JSONL fixtures from this corpus directory instead of live APIs")
 	overridesPath := fs.String("archetype-overrides", "", "archetype override file (paths C/D of REQ-COV-003)")
 	mappingsPath := fs.String("identity-mappings", "", "confirmed-mappings file (strategy 2; missing file = empty ratchet)")
+	cacheDir := fs.String("cache-dir", "", "record live pulls as replayable snapshots under this directory (ADR 0004)")
 	runTimestamp := fs.String("run-timestamp", "", "RFC3339 run timestamp override (deterministic runs; default now)")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -87,6 +90,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	}
 
 	var registry *adapter.Registry
+	var recorders map[string]recorderSetter
 	if *replayDir != "" {
 		registry, err = loadReplayRegistry(*replayDir)
 		if err != nil {
@@ -94,7 +98,7 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 	} else {
-		registry, err = liveRegistry(stderr)
+		registry, recorders, err = liveRegistry(stderr)
 		if registry == nil {
 			return 2
 		}
@@ -131,6 +135,24 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 			InvocationID: hex.EncodeToString(sum[:])[:8],
 		},
 	}
+	if *cacheDir != "" && *replayDir == "" {
+		store, serr := cache.NewStore(*cacheDir)
+		if serr != nil {
+			fmt.Fprintln(stderr, serr)
+			return 1
+		}
+		opts.Cache = map[string]*pipeline.SourceCache{}
+		for providerID, setRecorder := range recorders {
+			key := cache.NewKey(providerID, opts.Scope, opts.Window)
+			w, werr := store.NewWriter(key)
+			if werr != nil {
+				fmt.Fprintln(stderr, werr)
+				return 1
+			}
+			setRecorder(w) // raw pages and canonical records share the writer
+			opts.Cache[providerID] = &pipeline.SourceCache{Writer: w, Key: key}
+		}
+	}
 	res, err := pipeline.Run(opts)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
@@ -141,65 +163,82 @@ func runAnalyze(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
+// recorderSetter lets the cache wiring attach a page recorder to a
+// concrete adapter after construction (raw pages, ADR 0004).
+type recorderSetter func(w *cache.Writer)
+
 // liveRegistry builds the registry from environment credentials. A nil
 // registry means no credentials were found (exit 2).
-func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
+func liveRegistry(stderr io.Writer) (*adapter.Registry, map[string]recorderSetter, error) {
 	registry := adapter.NewRegistry()
+	recorders := map[string]recorderSetter{}
 	registered := 0
 	if key := os.Getenv("DD_API_KEY"); key != "" {
-		if err := registry.Register(&datadog.Adapter{APIKey: key, AppKey: os.Getenv("DD_APP_KEY")}); err != nil {
+		a := &datadog.Adapter{APIKey: key, AppKey: os.Getenv("DD_APP_KEY")}
+		if err := registry.Register(a); err != nil {
 			fmt.Fprintln(stderr, err)
-			return nil, err
+			return nil, nil, err
 		}
+		recorders["datadog"] = func(w *cache.Writer) { a.Recorder = w }
 		registered++
 	}
 	if key := os.Getenv("NEW_RELIC_API_KEY"); key != "" {
-		if err := registry.Register(&newrelic.Adapter{APIKey: key}); err != nil {
+		a := &newrelic.Adapter{APIKey: key}
+		if err := registry.Register(a); err != nil {
 			fmt.Fprintln(stderr, err)
-			return nil, err
+			return nil, nil, err
 		}
+		recorders["newrelic"] = func(w *cache.Writer) { a.Recorder = w }
 		registered++
 	}
 	if token := os.Getenv("PAGERDUTY_TOKEN"); token != "" {
-		if err := registry.Register(&pagerduty.Adapter{Token: token}); err != nil {
+		a := &pagerduty.Adapter{Token: token}
+		if err := registry.Register(a); err != nil {
 			fmt.Fprintln(stderr, err)
-			return nil, err
+			return nil, nil, err
 		}
+		recorders["pagerduty"] = func(w *cache.Writer) { a.Recorder = w }
 		registered++
 	}
 	if os.Getenv("AWS_REGION") != "" || os.Getenv("AWS_PROFILE") != "" {
 		awsCfg, cfgErr := awsconfig.LoadDefaultConfig(context.Background())
 		if cfgErr != nil {
 			fmt.Fprintln(stderr, cfgErr)
-			return nil, cfgErr
+			return nil, nil, cfgErr
 		}
 		if err := registry.Register(&cwadapter.Adapter{Client: cloudwatchsdk.NewFromConfig(awsCfg)}); err != nil {
 			fmt.Fprintln(stderr, err)
-			return nil, err
+			return nil, nil, err
 		}
+		// CloudWatch goes through the SDK, not raw HTTP: canonical records
+		// are cached by the pipeline; there are no raw pages to record.
 		registered++
 	}
 	if base := os.Getenv("SPLUNK_URL"); base != "" {
-		if err := registry.Register(&splunk.Adapter{BaseURL: base, Token: os.Getenv("SPLUNK_TOKEN")}); err != nil {
+		a := &splunk.Adapter{BaseURL: base, Token: os.Getenv("SPLUNK_TOKEN")}
+		if err := registry.Register(a); err != nil {
 			fmt.Fprintln(stderr, err)
-			return nil, err
+			return nil, nil, err
 		}
+		recorders["splunk"] = func(w *cache.Writer) { a.Recorder = w }
 		registered++
 	}
 	if base := os.Getenv("SERVICENOW_URL"); base != "" {
-		if err := registry.Register(&servicenow.Adapter{
+		a := &servicenow.Adapter{
 			BaseURL: base, User: os.Getenv("SERVICENOW_USER"), Password: os.Getenv("SERVICENOW_PASSWORD"),
-		}); err != nil {
-			fmt.Fprintln(stderr, err)
-			return nil, err
 		}
+		if err := registry.Register(a); err != nil {
+			fmt.Fprintln(stderr, err)
+			return nil, nil, err
+		}
+		recorders["servicenow"] = func(w *cache.Writer) { a.Recorder = w }
 		registered++
 	}
 	if registered == 0 {
 		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, NEW_RELIC_API_KEY, AWS_REGION/AWS_PROFILE, SPLUNK_URL/SPLUNK_TOKEN, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
-		return nil, nil
+		return nil, nil, nil
 	}
-	return registry, nil
+	return registry, recorders, nil
 }
 
 func splitComma(s string) []string {

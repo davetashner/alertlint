@@ -51,7 +51,7 @@ func writeSnapshot(t *testing.T, s *Store, k Key, status string, ids ...string) 
 		t.Fatalf("WriteRawPage: %v", err)
 	}
 	for _, id := range ids {
-		if err := w.WriteRecord(sampleRecord(id)); err != nil {
+		if err := w.WriteRecord("configs", sampleRecord(id)); err != nil {
 			t.Fatalf("WriteRecord: %v", err)
 		}
 	}
@@ -73,12 +73,12 @@ func TestRecordThenReplayIsByteIdentical(t *testing.T) {
 		t.Fatalf("manifest counts = %d pages / %d records, want 2 / 3", m.RawPages, m.RecordCount)
 	}
 
-	first, err := os.ReadFile(filepath.Join(s.Dir(k), "canonical", "records.jsonl"))
+	first, err := os.ReadFile(filepath.Join(s.Dir(k), "canonical", "configs.jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	recs, err := Records[model.AlertConfig](s, k)
+	recs, err := Records[model.AlertConfig](s, k, "configs")
 	if err != nil {
 		t.Fatalf("Records: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestRecordThenReplayIsByteIdentical(t *testing.T) {
 	// Re-writing the same snapshot from the same inputs must produce
 	// byte-identical canonical output (REQ-SCORE-007 reproducibility).
 	writeSnapshot(t, s, k, StatusComplete, "m-1", "m-2", "m-3")
-	second, err := os.ReadFile(filepath.Join(s.Dir(k), "canonical", "records.jsonl"))
+	second, err := os.ReadFile(filepath.Join(s.Dir(k), "canonical", "configs.jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestOfflineReplayFailsLoudlyOnMissingKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Records[model.AlertConfig](s, testKey()); !errors.Is(err, ErrMissing) {
+	if _, err := Records[model.AlertConfig](s, testKey(), "configs"); !errors.Is(err, ErrMissing) {
 		t.Errorf("missing key: err = %v, want ErrMissing", err)
 	}
 	if _, err := s.RawPages(testKey()); !errors.Is(err, ErrMissing) {
@@ -122,7 +122,7 @@ func TestFailedSnapshotIsNeverUsable(t *testing.T) {
 	if _, err := s.Manifest(k); !errors.Is(err, ErrMissing) {
 		t.Errorf("failed snapshot manifest: err = %v, want ErrMissing", err)
 	}
-	if _, err := Records[model.AlertConfig](s, k); !errors.Is(err, ErrMissing) {
+	if _, err := Records[model.AlertConfig](s, k, "configs"); !errors.Is(err, ErrMissing) {
 		t.Errorf("failed snapshot records: err = %v, want ErrMissing", err)
 	}
 	// Raw stays available: it is the source of truth for regeneration.
@@ -142,7 +142,7 @@ func TestAbandonedWriterIsInvisible(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := w.WriteRecord(sampleRecord("m-1")); err != nil {
+	if err := w.WriteRecord("configs", sampleRecord("m-1")); err != nil {
 		t.Fatal(err)
 	}
 	// No Seal: readers must treat the snapshot as missing.

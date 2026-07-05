@@ -17,6 +17,7 @@ import (
 
 	"github.com/davetashner/alertlint/internal/adapter"
 	"github.com/davetashner/alertlint/internal/archetype"
+	"github.com/davetashner/alertlint/internal/cache"
 	"github.com/davetashner/alertlint/internal/identity"
 	"github.com/davetashner/alertlint/internal/model"
 	"github.com/davetashner/alertlint/internal/output"
@@ -41,6 +42,11 @@ type Options struct {
 	Resolver   identity.ResolverConfig
 	Fuzzy      identity.FuzzyConfig
 	OutDir     string
+	// Cache, when non-nil, records every source's canonical records into
+	// per-provider snapshot writers and seals manifests (ADR 0004). Raw
+	// pages arrive via the adapters' Recorder hooks, wired by the CLI at
+	// construction; the same Writer receives both.
+	Cache map[string]*SourceCache
 
 	// Run provenance — passed in, never read from the clock.
 	RunMeta output.Run
@@ -63,7 +69,15 @@ func Run(opts Options) (Result, error) {
 	for _, cp := range opts.Registry.CIProviders() {
 		for ci, err := range cp.FetchCIs(opts.Scope, opts.Window) {
 			if err != nil {
+				if sc := opts.Cache[cp.ProviderID()]; sc != nil {
+					_, _ = sc.Writer.Seal(sc.Key, opts.RunMeta.ToolVersion, model.CanonicalSchemaVersion, cache.StatusFailed)
+				}
 				return res, fmt.Errorf("ci inventory from %s: %w", cp.ProviderID(), err)
+			}
+			if sc := opts.Cache[cp.ProviderID()]; sc != nil {
+				if err := sc.Writer.WriteRecord("cis", ci); err != nil {
+					return res, err
+				}
 			}
 			cis = append(cis, ci)
 		}
@@ -136,6 +150,13 @@ func Run(opts Options) (Result, error) {
 	return res, nil
 }
 
+// SourceCache pairs a provider's snapshot writer with its key so the
+// pipeline can seal manifests after each source completes.
+type SourceCache struct {
+	Writer *cache.Writer
+	Key    cache.Key
+}
+
 // pulled holds all canonical records of one run, keyed for joining.
 type pulled struct {
 	artifacts []identity.Artifact
@@ -170,11 +191,30 @@ func pullAll(opts Options) (pulled, error) {
 		}
 	}
 
+	record := func(provider, class string, rec any) error {
+		sc := opts.Cache[provider]
+		if sc == nil {
+			return nil
+		}
+		return sc.Writer.WriteRecord(class, rec)
+	}
+	fail := func(provider string, err error) error {
+		if sc := opts.Cache[provider]; sc != nil {
+			// Failed pulls are sealed failed: never presented as usable
+			// snapshots, but raw pages survive for regeneration.
+			_, _ = sc.Writer.Seal(sc.Key, opts.RunMeta.ToolVersion, model.CanonicalSchemaVersion, cache.StatusFailed)
+		}
+		return err
+	}
+
 	for _, cp := range opts.Registry.ConfigProviders() {
 		noteSource(cp)
 		for rec, err := range cp.FetchConfigs(opts.Scope, opts.Window) {
 			if err != nil {
-				return p, fmt.Errorf("configs from %s: %w", cp.ProviderID(), err)
+				return p, fail(cp.ProviderID(), fmt.Errorf("configs from %s: %w", cp.ProviderID(), err))
+			}
+			if err := record(cp.ProviderID(), "configs", rec); err != nil {
+				return p, err
 			}
 			p.configs[add(rec.Envelope, identity.ClassConfig)] = rec
 		}
@@ -183,7 +223,10 @@ func pullAll(opts Options) (pulled, error) {
 		noteSource(hp)
 		for rec, err := range hp.FetchEvents(opts.Scope, opts.Window) {
 			if err != nil {
-				return p, fmt.Errorf("events from %s: %w", hp.ProviderID(), err)
+				return p, fail(hp.ProviderID(), fmt.Errorf("events from %s: %w", hp.ProviderID(), err))
+			}
+			if err := record(hp.ProviderID(), "events", rec); err != nil {
+				return p, err
 			}
 			p.events[add(rec.Envelope, identity.ClassHistory)] = rec
 		}
@@ -192,9 +235,17 @@ func pullAll(opts Options) (pulled, error) {
 		noteSource(ap)
 		for rec, err := range ap.FetchResponses(opts.Scope, opts.Window) {
 			if err != nil {
-				return p, fmt.Errorf("responses from %s: %w", ap.ProviderID(), err)
+				return p, fail(ap.ProviderID(), fmt.Errorf("responses from %s: %w", ap.ProviderID(), err))
+			}
+			if err := record(ap.ProviderID(), "responses", rec); err != nil {
+				return p, err
 			}
 			p.responses[add(rec.Envelope, identity.ClassAction)] = rec
+		}
+	}
+	for provider, sc := range opts.Cache {
+		if _, err := sc.Writer.Seal(sc.Key, opts.RunMeta.ToolVersion, model.CanonicalSchemaVersion, cache.StatusComplete); err != nil {
+			return p, fmt.Errorf("seal snapshot for %s: %w", provider, err)
 		}
 	}
 	sort.Slice(p.sources, func(i, j int) bool { return p.sources[i].Source < p.sources[j].Source })

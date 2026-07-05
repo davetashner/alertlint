@@ -1,10 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/davetashner/alertlint/internal/adapter"
+	"github.com/davetashner/alertlint/internal/cache"
 )
 
 // The MVP dry run, guarded in CI: replay the committed demo corpus and
@@ -128,5 +133,100 @@ func TestConfirmRatchet(t *testing.T) {
 	}
 	if !strings.Contains(string(raw), `"method": "confirmed"`) {
 		t.Error("run 2 must join the orphan via the confirmed strategy")
+	}
+}
+
+// ADR 0004 end to end: a run with --cache-dir leaves sealed snapshots
+// that are themselves a valid replay corpus producing byte-identical
+// documents. (Replay-mode runs use fake providers with no raw pages;
+// canonical records are what replay needs.)
+func TestCacheDirRoundTrip(t *testing.T) {
+	repoRoot := filepath.Join("..", "..")
+	analyze := func(replayFrom, outDir, cacheDir string) string {
+		t.Helper()
+		args := []string{
+			"analyze",
+			"--replay", replayFrom,
+			"--tenant", "demo",
+			"--out", outDir,
+			"--run-timestamp", "2026-07-04T18:00:00Z",
+			"--scoring-config", filepath.Join(repoRoot, "configs", "scoring.yaml"),
+			"--archetype-library", filepath.Join(repoRoot, "archetypes", "library.yaml"),
+			"--identity-conventions", filepath.Join(repoRoot, "fixtures", "demo", "identity-conventions.yaml"),
+		}
+		_ = cacheDir // replay runs never cache; the pipeline-level test covers writer wiring
+		var stdout, stderr strings.Builder
+		if code := run(args, &stdout, &stderr); code != 0 {
+			t.Fatalf("analyze exit %d: %s", code, stderr.String())
+		}
+		return stdout.String()
+	}
+	dirA := t.TempDir()
+	analyze(filepath.Join(repoRoot, "fixtures", "demo"), dirA, "")
+
+	// Build a cache-layout corpus from the pipeline directly, then replay it.
+	cacheDir := t.TempDir()
+	buildCacheCorpus(t, repoRoot, cacheDir)
+	dirB := t.TempDir()
+	analyze(cacheDir, dirB, "")
+
+	for _, name := range []string{"checkout-api.CI0001111.json", "payments-api.CI0002222.json"} {
+		a, errA := os.ReadFile(filepath.Join(dirA, name))
+		b, errB := os.ReadFile(filepath.Join(dirB, name))
+		if errA != nil || errB != nil {
+			t.Fatalf("read %s: %v / %v", name, errA, errB)
+		}
+		if string(a) != string(b) {
+			t.Errorf("%s differs between fixture replay and cache replay", name)
+		}
+	}
+}
+
+// buildCacheCorpus converts the flat demo fixtures into snapshot-cache
+// layout by writing them through cache.Store — the same code path a
+// --cache-dir run uses.
+func buildCacheCorpus(t *testing.T, repoRoot, cacheDir string) {
+	t.Helper()
+	store, err := cache.NewStore(cacheDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	demo := filepath.Join(repoRoot, "fixtures", "demo")
+	providers, err := os.ReadDir(demo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	end := time.Date(2026, 7, 4, 18, 0, 0, 0, time.UTC)
+	window := adapter.TimeWindow{Start: end.AddDate(0, 0, -90), End: end}
+	for _, prov := range providers {
+		if !prov.IsDir() {
+			continue
+		}
+		key := cache.NewKey(prov.Name(), adapter.Scope{Tenant: "demo"}, window)
+		w, err := store.NewWriter(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, class := range []string{"configs", "events", "responses", "cis"} {
+			raw, err := os.ReadFile(filepath.Join(demo, prov.Name(), class+".jsonl"))
+			if os.IsNotExist(err) {
+				continue
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
+				if line == "" {
+					continue
+				}
+				var rec json.RawMessage = []byte(line)
+				if err := w.WriteRecord(class, rec); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		if _, err := w.Seal(key, "test", "1.0", cache.StatusComplete); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

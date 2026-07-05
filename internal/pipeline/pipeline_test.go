@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/davetashner/alertlint/internal/adapter"
 	"github.com/davetashner/alertlint/internal/adapter/fake"
 	"github.com/davetashner/alertlint/internal/archetype"
+	"github.com/davetashner/alertlint/internal/cache"
 	"github.com/davetashner/alertlint/internal/identity"
 	"github.com/davetashner/alertlint/internal/model"
 	"github.com/davetashner/alertlint/internal/output"
@@ -336,3 +338,68 @@ func TestRunByteIdentical(t *testing.T) {
 
 func timePtr(t time.Time) *time.Time { return &t }
 func strPtr(s string) *string        { return &s }
+
+// Cache wiring: writers receive canonical records per class and seal
+// complete; a failing source seals failed (raw preserved for
+// regeneration, never presented as usable).
+func TestCacheWiring(t *testing.T) {
+	dir := t.TempDir()
+	opts := testOptions(t, t.TempDir())
+	store, err := cache.NewStore(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts.Cache = map[string]*SourceCache{}
+	for _, provider := range []string{"datadog", "pagerduty", "servicenow", "newrelic"} {
+		key := cache.NewKey(provider, opts.Scope, opts.Window)
+		w, err := store.NewWriter(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		opts.Cache[provider] = &SourceCache{Writer: w, Key: key}
+	}
+	if _, err := Run(opts); err != nil {
+		t.Fatal(err)
+	}
+	pd := opts.Cache["pagerduty"]
+	m, err := store.Manifest(pd.Key)
+	if err != nil {
+		t.Fatalf("pagerduty snapshot not sealed complete: %v", err)
+	}
+	if m.RecordsByClass["events"] != 14 || m.RecordsByClass["responses"] != 14 {
+		t.Errorf("pagerduty class counts = %v", m.RecordsByClass)
+	}
+	events, err := cache.Records[model.AlertEvent](store, pd.Key, "events")
+	if err != nil || len(events) != 14 {
+		t.Errorf("replayed events = %d, err=%v", len(events), err)
+	}
+	sn := opts.Cache["servicenow"]
+	msn, err := store.Manifest(sn.Key)
+	if err != nil || msn.RecordsByClass["cis"] != 2 {
+		t.Errorf("servicenow cis count = %v err=%v", msn.RecordsByClass, err)
+	}
+
+	// A failing source seals failed.
+	opts2 := testOptions(t, t.TempDir())
+	broken := &fake.Provider{ID: "brokenvendor", Err: errBroken,
+		Configs: []model.AlertConfig{}}
+	// give it one config so it registers as a ConfigProvider capability
+	broken.Configs = nil
+	if err := opts2.Registry.Register(broken); err != nil {
+		t.Fatal(err)
+	}
+	key := cache.NewKey("brokenvendor", opts2.Scope, opts2.Window)
+	w, err := store.NewWriter(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts2.Cache = map[string]*SourceCache{"brokenvendor": {Writer: w, Key: key}}
+	if _, err := Run(opts2); err == nil {
+		t.Fatal("broken source must fail the run")
+	}
+	if _, err := store.Manifest(key); err == nil {
+		t.Error("failed source's snapshot must not be usable (sealed failed)")
+	}
+}
+
+var errBroken = errors.New("simulated mid-pull failure")
