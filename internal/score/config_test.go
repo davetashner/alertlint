@@ -14,8 +14,11 @@ func TestCommittedDefaultsMatchSpec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
-	if c.ScoringConfigVersion != 2 {
-		t.Errorf("version = %d, want 2", c.ScoringConfigVersion)
+	if c.ScoringConfigVersion != 3 {
+		t.Errorf("version = %d, want 3", c.ScoringConfigVersion)
+	}
+	if c.OffHours.Timezone != "UTC" || c.OffHours.StartHour != 20 || !c.OffHours.WeekendIsOffHours {
+		t.Errorf("offhours = %+v", c.OffHours)
 	}
 	if !c.ExcludeMaintenance() {
 		t.Error("default maintenance policy must exclude (REQ-NOISE-005)")

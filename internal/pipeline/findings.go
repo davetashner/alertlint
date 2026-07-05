@@ -31,6 +31,8 @@ type noiseEvidence struct {
 	DispositionCounts    map[string]int    `json:"disposition_counts"`
 	NoiseRatio           float64           `json:"noise_ratio"`
 	ClassCounts          score.ClassCounts `json:"class_counts"`
+	OffHoursFireCount    int               `json:"off_hours_fire_count"`
+	OffHoursRatio        float64           `json:"off_hours_ratio"`
 }
 
 func (fa findingAssembler) noise(nf score.NoiseFinding, fires []score.Fire, classifications []score.FireClassification, cfg model.AlertConfig) output.Finding {
@@ -43,6 +45,9 @@ func (fa findingAssembler) noise(nf score.NoiseFinding, fires []score.Fire, clas
 	}
 	var resolveSecs []int64
 	for _, f := range fires {
+		if fa.cfg.OffHours.IsOffHours(f.Event.FiredAt) {
+			ev.OffHoursFireCount++
+		}
 		if f.Response != nil && f.Response.AckedAt != nil {
 			ev.AckedCount++
 		}
@@ -65,6 +70,9 @@ func (fa findingAssembler) noise(nf score.NoiseFinding, fires []score.Fire, clas
 		sort.Slice(resolveSecs, func(i, j int) bool { return resolveSecs[i] < resolveSecs[j] })
 		med := resolveSecs[(len(resolveSecs)-1)/2]
 		ev.MedianTimeToResolveS = &med
+	}
+	if len(fires) > 0 {
+		ev.OffHoursRatio = float64(ev.OffHoursFireCount) / float64(len(fires))
 	}
 
 	src, native := sourceOf(cfg, nf.AlertID)

@@ -93,6 +93,11 @@ func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pu
 			continue
 		}
 		scoreable++
+		for _, f := range fires {
+			if opts.Config.OffHours.IsOffHours(f.Event.FiredAt) {
+				inputs.FiresOffHours++
+			}
+		}
 		alertNoise = append(alertNoise, score.NoiseForAlert(id, classifications, opts.Config))
 		thresholdFindings = append(thresholdFindings,
 			score.ThresholdForAlert(score.AlertThresholdInput{AlertID: id, Fires: fires, Classifications: classifications}, opts.Window, opts.Config)...)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	_ "time/tzdata" // embedded zone data: off-hours math is host-independent
 )
 
 // version is stamped at release time via

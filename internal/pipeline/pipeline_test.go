@@ -543,3 +543,46 @@ func TestMaintenanceSuppression(t *testing.T) {
 			*doc.Scores.Noise, *base.Scores.Noise)
 	}
 }
+
+// Off-hours evidence (alertlint-md9): counts flow into scores.inputs
+// and noise evidence; scores themselves are untouched by design.
+func TestOffHoursEvidence(t *testing.T) {
+	// Fixture CPU fires land 14:00-17:00 UTC = business hours in UTC.
+	dirA := t.TempDir()
+	optsA := testOptions(t, dirA)
+	if _, err := Run(optsA); err != nil {
+		t.Fatal(err)
+	}
+	var utcDoc output.Document
+	raw, _ := os.ReadFile(filepath.Join(dirA, "checkout-api.CI0012345.json"))
+	if err := json.Unmarshal(raw, &utcDoc); err != nil {
+		t.Fatal(err)
+	}
+
+	// Same fires under an Asia/Tokyo org: 23:00-02:00 local = off-hours.
+	dirB := t.TempDir()
+	optsB := testOptions(t, dirB)
+	optsB.Config.OffHours.Timezone = "Asia/Tokyo"
+	if err := optsB.Config.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Run(optsB); err != nil {
+		t.Fatal(err)
+	}
+	var jpDoc output.Document
+	raw, _ = os.ReadFile(filepath.Join(dirB, "checkout-api.CI0012345.json"))
+	if err := json.Unmarshal(raw, &jpDoc); err != nil {
+		t.Fatal(err)
+	}
+
+	if jpDoc.Scores.Inputs.FiresOffHours == 0 {
+		t.Fatal("Tokyo org must count the fixture pile as off-hours")
+	}
+	if !strings.Contains(string(raw), `"off_hours_fire_count"`) {
+		t.Error("noise evidence must carry off_hours_fire_count")
+	}
+	// Evidence-only: scores identical across timezones.
+	if *jpDoc.Scores.Noise != *utcDoc.Scores.Noise || *jpDoc.Scores.PriorityScore != *utcDoc.Scores.PriorityScore {
+		t.Errorf("off-hours must not change scores: noise %v vs %v", *jpDoc.Scores.Noise, *utcDoc.Scores.Noise)
+	}
+}

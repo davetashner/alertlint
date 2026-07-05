@@ -39,14 +39,14 @@ func runWorklist(args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 	case "tsv":
-		fmt.Fprintln(stdout, "rank\tci_id\tci_name\ttier\tpriority\tcomposite\tfindings")
+		fmt.Fprintln(stdout, "rank\tci_id\tci_name\ttier\tpriority\tcomposite\tfindings\toffhours")
 		for i, e := range wl.Ranked {
 			composite := ""
 			if e.Composite != nil {
 				composite = fmt.Sprintf("%.1f", *e.Composite)
 			}
-			fmt.Fprintf(stdout, "%d\t%s\t%s\t%d\t%.1f\t%s\t%d\n",
-				i+1, e.CIID, e.CIName, e.Tier, *e.PriorityScore, composite, e.Findings)
+			fmt.Fprintf(stdout, "%d\t%s\t%s\t%d\t%.1f\t%s\t%d\t%d\n",
+				i+1, e.CIID, e.CIName, e.Tier, *e.PriorityScore, composite, e.Findings, e.FiresOffHours)
 		}
 		for _, e := range wl.NotRanked {
 			fmt.Fprintf(stdout, "-\t%s\t%s\t%d\tnot ranked\t\t%d\n", e.CIID, e.CIName, e.Tier, e.Findings)
