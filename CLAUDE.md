@@ -64,6 +64,7 @@ CI (`.github/workflows/ci.yml`, spec: `docs/specs/ci-pipeline.md`) runs three re
 
 ```bash
 python3 scripts/check_traceability.py   # spec/ADR headers + REQ-ID traceability
+scripts/check_contract.sh <corpus-dir>  # output-contract jq acceptance (corpus via analyze --replay fixtures/demo)
 # doc links: lychee --offline '*.md' 'docs/**/*.md'  (if lychee installed)
 # once go.mod exists: gofmt -l . && go vet ./... && go build ./... && go test -race -count=1 ./...
 ```

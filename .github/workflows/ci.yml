@@ -71,3 +71,10 @@ jobs:
       - name: go test
         if: steps.detect.outputs.present == 'true'
         run: go test -race -count=1 ./...
+      - name: contract acceptance (replay + jq)
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          go run ./cmd/alertlint analyze --replay fixtures/demo --tenant demo \
+            --out /tmp/contract-corpus --run-timestamp 2026-07-04T18:00:00Z \
+            --identity-conventions fixtures/demo/identity-conventions.yaml
+          scripts/check_contract.sh /tmp/contract-corpus
