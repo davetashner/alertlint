@@ -444,7 +444,7 @@ directory):
 
 | Adapter | ConfigProvider | HistoryProvider | ActionProvider | Requirement |
 |--------------|:---:|:---:|:---:|-------------|
-| Datadog | ✓ | — | — | REQ-SRC-001 |
+| Datadog | ✓ | ✓ | — | REQ-SRC-001, REQ-SRC-008 |
 | New Relic | ✓ | — | — | REQ-SRC-001 |
 | CloudWatch | ✓ | — | — | REQ-SRC-001 |
 | Splunk | ✓ | — | — | REQ-SRC-001 |
@@ -572,12 +572,14 @@ made here:
   decide whether adapters hash it, pass an opaque vendor sys-id, or drop it
   (reassignment_count may be signal enough). Owner: dave — resolve before
   the first ActionProvider ships.
-- **Is PagerDuty's auto-resolution signal sufficient for REQ-NOISE-001?**
-  The requirement names "auto-resolve status from the monitor/metric system";
-  v1 captures it via PagerDuty's integration-resolved flag. If services page
-  through paths that bypass PagerDuty/ServiceNow, a monitor-side
-  HistoryProvider (e.g. Datadog) may need promoting into v1. Plan: validate
-  against early real-data runs.
+- ~~Is PagerDuty's auto-resolution signal sufficient?~~ — resolved by
+  REQ-SRC-008: it is not, because never-paged monitors are invisible to
+  paging history. The Datadog adapter now also serves `HistoryProvider`
+  from alert events (window-chunked v1 events API, sources=alert);
+  triggered→recovered pairs become episodes with `auto_resolved: true` on
+  condition recovery. Dedup: the core drops monitor-history episodes for
+  any monitor that paging history already covers — paging history is
+  authoritative because it carries the response trail.
 - **Condition parse depth.** How far each ConfigProvider goes extracting
   `threshold` / `comparator` / `duration_s` from vendor query languages
   (CloudWatch is trivially structured; Splunk SPL often is not). The

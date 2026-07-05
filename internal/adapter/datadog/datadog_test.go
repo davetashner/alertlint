@@ -28,6 +28,9 @@ func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	if req.Header.Get("DD-API-KEY") == "" || req.Header.Get("DD-APPLICATION-KEY") == "" {
 		f.t.Error("API keys not set on request")
 	}
+	if req.URL.Path == "/api/v1/events" {
+		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"events":[]}`))}, nil
+	}
 	file, ok := f.pages[req.URL.Query().Get("page")]
 	if !ok {
 		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`[]`))}, nil

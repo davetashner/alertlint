@@ -403,3 +403,78 @@ func TestCacheWiring(t *testing.T) {
 }
 
 var errBroken = errors.New("simulated mid-pull failure")
+
+// Paging history is authoritative: monitor-side episodes for a monitor
+// that paging history already covers are dropped; unpaged monitors keep
+// their monitor-side history (REQ-SRC-008 dedup rule).
+func TestPagingHistoryWinsOverMonitorHistory(t *testing.T) {
+	dir := t.TempDir()
+	opts := testOptions(t, dir)
+
+	ddProvider := "datadog"
+	pagedName := "[prod] checkout-api p95 latency high" // PD covers it (by name)
+	unpagedName := "checkout-api dormant disk monitor"  // monitor-side only
+	paged := "84312077"
+	unpaged := "84312440"
+
+	auto := true
+	mk := func(id, monitor, name string, day int) model.AlertEvent {
+		fired := opts.Window.Start.AddDate(0, 0, day)
+		resolved := fired.Add(3 * time.Minute)
+		return model.AlertEvent{
+			Envelope:        envelope("datadog", "alert_event", id, hints(map[string]string{"service": "checkout-api"})),
+			AlertRef:        model.AlertRef{Provider: &ddProvider, NativeID: &monitor, Name: &name},
+			FiredAt:         fired,
+			ResolvedAt:      &resolved,
+			AutoResolved:    &auto,
+			OccurrenceCount: 1,
+			Severity:        model.Severity{Native: "error", Normalized: model.SeverityHigh},
+		}
+	}
+	ddHistory := &fake.Provider{ID: "datadog-events", Events: []model.AlertEvent{}}
+	_ = ddHistory
+	// Register monitor-side history under the datadog source itself by
+	// extending the existing datadog fake with events.
+	for _, p := range opts.Registry.ConfigProviders() {
+		if p.ProviderID() == "datadog" {
+			fp := p.(*fake.Provider)
+			fp.Events = []model.AlertEvent{
+				mk("dd-ev-1", paged, pagedName, 30),     // duplicate of PD coverage: dropped
+				mk("dd-ev-2", unpaged, unpagedName, 31), // unpaged monitor: kept
+				mk("dd-ev-3", unpaged, unpagedName, 32),
+				mk("dd-ev-4", unpaged, unpagedName, 33),
+			}
+		}
+	}
+	if _, err := Run(opts); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "checkout-api.CI0012345.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc output.Document
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	var ddEventArtifacts, pagedDD int
+	for _, a := range doc.Identity.Artifacts {
+		if a.Source == "datadog" && a.Kind == "alert_event" {
+			ddEventArtifacts++
+			if strings.Contains(a.NativeID, "dd-ev-1") {
+				pagedDD++
+			}
+		}
+	}
+	if ddEventArtifacts != 3 {
+		t.Errorf("datadog event artifacts = %d, want 3 (unpaged monitor only)", ddEventArtifacts)
+	}
+	if pagedDD != 0 {
+		t.Error("monitor-side episode for a paged monitor must be dropped")
+	}
+	// The previously-dormant latency monitor now has fires from
+	// monitor-side history.
+	if doc.Scores.Inputs.AlertsDormant != 0 {
+		t.Errorf("dormant = %d — monitor-side history should feed the latency monitor", doc.Scores.Inputs.AlertsDormant)
+	}
+}
