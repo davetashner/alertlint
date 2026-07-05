@@ -51,6 +51,17 @@ func buildDocument(opts Options, ci identity.CI, mappings []identity.Mapping, pu
 
 	for _, id := range alertIDs {
 		fires := join.fires[id]
+		if opts.Config.ExcludeMaintenance() {
+			var active []score.Fire
+			for _, f := range fires {
+				if fireInMaintenance(f, pull.maintenance) {
+					inputs.FiresInMaintenance++
+					continue
+				}
+				active = append(active, f)
+			}
+			fires = active
+		}
 		classifications := make([]score.FireClassification, len(fires))
 		classified := 0
 		for i, f := range fires {
@@ -259,6 +270,34 @@ func buildMetadata(opts Options, window output.Window, pull pulled) output.Metad
 }
 
 // --- small helpers ---
+
+// fireInMaintenance reports whether the fire started inside any declared
+// maintenance window that covers its monitor (scope-wide windows cover
+// everything). REQ-NOISE-005: suppressed fires stay visible via
+// scores.inputs.fires_in_maintenance.
+func fireInMaintenance(f score.Fire, windows []model.MaintenanceWindow) bool {
+	t := f.Event.FiredAt
+	for _, w := range windows {
+		if t.Before(w.StartsAt) {
+			continue
+		}
+		if w.EndsAt != nil && !t.Before(*w.EndsAt) {
+			continue
+		}
+		if len(w.MonitorRefs) == 0 {
+			return true // scope-wide
+		}
+		if f.Event.AlertRef.Provider == nil || f.Event.AlertRef.NativeID == nil {
+			continue
+		}
+		for _, ref := range w.MonitorRefs {
+			if ref.Provider == *f.Event.AlertRef.Provider && ref.NativeID == *f.Event.AlertRef.NativeID {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 func joinService(mappings []identity.Mapping, pull pulled) serviceJoin {
 	join := serviceJoin{configs: map[identity.ArtifactRef]model.AlertConfig{}, fires: map[string][]score.Fire{}}

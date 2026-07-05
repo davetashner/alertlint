@@ -159,11 +159,12 @@ type SourceCache struct {
 
 // pulled holds all canonical records of one run, keyed for joining.
 type pulled struct {
-	artifacts []identity.Artifact
-	configs   map[identity.ArtifactRef]model.AlertConfig
-	events    map[identity.ArtifactRef]model.AlertEvent
-	responses map[identity.ArtifactRef]model.ResponseRecord
-	sources   []output.SourceMeta
+	artifacts   []identity.Artifact
+	configs     map[identity.ArtifactRef]model.AlertConfig
+	events      map[identity.ArtifactRef]model.AlertEvent
+	responses   map[identity.ArtifactRef]model.ResponseRecord
+	maintenance []model.MaintenanceWindow
+	sources     []output.SourceMeta
 }
 
 func pullAll(opts Options) (pulled, error) {
@@ -288,6 +289,18 @@ func pullAll(opts Options) (pulled, error) {
 				return p, err
 			}
 			p.responses[add(rec.Envelope, identity.ClassAction)] = rec
+		}
+	}
+	for _, mp := range opts.Registry.MaintenanceProviders() {
+		noteSource(mp)
+		for mw, err := range mp.FetchMaintenance(opts.Scope, opts.Window) {
+			if err != nil {
+				return p, fail(mp.ProviderID(), fmt.Errorf("maintenance from %s: %w", mp.ProviderID(), err))
+			}
+			if err := record(mp.ProviderID(), "maintenance", mw); err != nil {
+				return p, err
+			}
+			p.maintenance = append(p.maintenance, mw)
 		}
 	}
 	for provider, sc := range opts.Cache {

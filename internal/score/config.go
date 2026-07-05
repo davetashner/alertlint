@@ -57,6 +57,10 @@ type Noise struct {
 	NeverAckedGraceMinutes int                `yaml:"never_acked_grace_minutes"`
 	HighReassignmentCount  int                `yaml:"high_reassignment_count"`
 	TierNoiseBudgetPerWeek map[string]float64 `yaml:"tier_noise_budget_per_week"`
+	// MaintenancePolicy: "exclude" (default) removes fires inside declared
+	// maintenance windows from all scoring while keeping them visible in
+	// evidence (REQ-NOISE-005); "count" scores them normally.
+	MaintenancePolicy string `yaml:"maintenance_policy"`
 }
 
 // Threshold holds the TH-1..TH-4 heuristic parameters (REQ-THRESH-001).
@@ -151,6 +155,12 @@ func (c Config) Validate() error {
 			return fmt.Errorf("noise budget for %s must be positive, got %v", tier, budget)
 		}
 	}
+	switch c.Noise.MaintenancePolicy {
+	case "", "exclude", "count":
+		// "" normalizes to exclude
+	default:
+		return fmt.Errorf("noise.maintenance_policy %q: must be exclude or count", c.Noise.MaintenancePolicy)
+	}
 	for _, conf := range []float64{
 		c.Confidence.DispositionNoAction, c.Confidence.LinkedChangeOrIncident,
 		c.Confidence.AckedManualClose, c.Confidence.AmbiguityDefault,
@@ -180,6 +190,12 @@ func (c Config) BandOf(confidence float64) Band {
 	default:
 		return BandMedium
 	}
+}
+
+// ExcludeMaintenance reports whether fires inside maintenance windows
+// are removed from scoring (the REQ-NOISE-005 default).
+func (c Config) ExcludeMaintenance() bool {
+	return c.Noise.MaintenancePolicy != "count"
 }
 
 // LowConfidence reports whether a determination at this confidence carries
