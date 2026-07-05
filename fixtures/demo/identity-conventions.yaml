@@ -1,0 +1,29 @@
+# Demo-estate identity conventions (see configs/identity-conventions.yaml
+# for the format). Rules are per-estate config: the demo needs a
+# servicenow rule the starter file deliberately does not ship.
+version: 1
+rules:
+  - id: dd-service-tag
+    description: "Datadog service tag equals CMDB CI name"
+    source: datadog
+    match: { hint: tag, key: service }
+    transform: [lowercase]
+    lookup: { field: name }
+    tests:
+      - { input: "checkout-api", expect: "checkout-api" }
+  - id: pd-service-name
+    description: "PagerDuty service display name equals CI name"
+    source: pagerduty
+    match: { hint: service_name }
+    transform: [lowercase, collapse_whitespace, replace: { old: " ", new: "-" }]
+    lookup: { field: name }
+    tests:
+      - { input: "Checkout   API", expect: "checkout-api" }
+  - id: snow-service-name
+    description: "ServiceNow CI display name equals CMDB CI name"
+    source: servicenow
+    match: { hint: service_name }
+    transform: [lowercase]
+    lookup: { field: name }
+    tests:
+      - { input: "payments-api", expect: "payments-api" }

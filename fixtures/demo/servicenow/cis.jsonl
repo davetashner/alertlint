@@ -1,0 +1,3 @@
+{"ci_id":"CI0001111","name":"checkout-api","aliases":[],"criticality_tier":1,"status":"operational"}
+{"ci_id":"CI0002222","name":"payments-api","aliases":[],"criticality_tier":2,"status":"operational"}
+{"ci_id":"CI0003333","name":"legacy-batch","aliases":[],"criticality_tier":null,"status":"operational"}
