@@ -11,6 +11,7 @@ package pipeline
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -42,6 +43,10 @@ type Options struct {
 	Resolver   identity.ResolverConfig
 	Fuzzy      identity.FuzzyConfig
 	OutDir     string
+	// Log, when non-nil, receives per-source pull summaries — long pulls
+	// should never look hung. Counts only, no clock reads (ADR 0003).
+	Log io.Writer
+
 	// Cache, when non-nil, records every source's canonical records into
 	// per-provider snapshot writers and seals manifests (ADR 0004). Raw
 	// pages arrive via the adapters' Recorder hooks, wired by the CLI at
@@ -66,6 +71,7 @@ func Run(opts Options) (Result, error) {
 
 	// 1. CI inventory.
 	var cis []identity.CI
+	ciCounts := map[string]int{}
 	for _, cp := range opts.Registry.CIProviders() {
 		for ci, err := range cp.FetchCIs(opts.Scope, opts.Window) {
 			if err != nil {
@@ -79,7 +85,18 @@ func Run(opts Options) (Result, error) {
 					return res, err
 				}
 			}
+			ciCounts[cp.ProviderID()]++
 			cis = append(cis, ci)
+		}
+	}
+	if opts.Log != nil {
+		providers := make([]string, 0, len(ciCounts))
+		for prov := range ciCounts {
+			providers = append(providers, prov)
+		}
+		sort.Strings(providers)
+		for _, prov := range providers {
+			fmt.Fprintf(opts.Log, "%s: %d cis\n", prov, ciCounts[prov])
 		}
 	}
 	inventory := identity.NewInventory(cis)
@@ -165,6 +182,7 @@ type pulled struct {
 	responses   map[identity.ArtifactRef]model.ResponseRecord
 	maintenance []model.MaintenanceWindow
 	sources     []output.SourceMeta
+	counts      map[string]map[string]int // provider -> class -> records
 }
 
 func pullAll(opts Options) (pulled, error) {
@@ -172,6 +190,13 @@ func pullAll(opts Options) (pulled, error) {
 		configs:   map[identity.ArtifactRef]model.AlertConfig{},
 		events:    map[identity.ArtifactRef]model.AlertEvent{},
 		responses: map[identity.ArtifactRef]model.ResponseRecord{},
+		counts:    map[string]map[string]int{},
+	}
+	count := func(provider, class string) {
+		if p.counts[provider] == nil {
+			p.counts[provider] = map[string]int{}
+		}
+		p.counts[provider][class]++
 	}
 	add := func(env model.Envelope, class identity.DataClass) identity.ArtifactRef {
 		ref := identity.ArtifactRef{Source: env.Source.Provider, Kind: env.SourceRef.Kind, Key: env.SourceRef.NativeID}
@@ -217,6 +242,7 @@ func pullAll(opts Options) (pulled, error) {
 			if err := record(cp.ProviderID(), "configs", rec); err != nil {
 				return p, err
 			}
+			count(cp.ProviderID(), "configs")
 			p.configs[add(rec.Envelope, identity.ClassConfig)] = rec
 		}
 	}
@@ -235,6 +261,7 @@ func pullAll(opts Options) (pulled, error) {
 			if err := record(hp.ProviderID(), "events", rec); err != nil {
 				return p, err
 			}
+			count(hp.ProviderID(), "events")
 			allEvents = append(allEvents, rec)
 		}
 	}
@@ -288,6 +315,7 @@ func pullAll(opts Options) (pulled, error) {
 			if err := record(ap.ProviderID(), "responses", rec); err != nil {
 				return p, err
 			}
+			count(ap.ProviderID(), "responses")
 			p.responses[add(rec.Envelope, identity.ClassAction)] = rec
 		}
 	}
@@ -300,6 +328,7 @@ func pullAll(opts Options) (pulled, error) {
 			if err := record(mp.ProviderID(), "maintenance", mw); err != nil {
 				return p, err
 			}
+			count(mp.ProviderID(), "maintenance")
 			p.maintenance = append(p.maintenance, mw)
 		}
 	}
@@ -308,6 +337,30 @@ func pullAll(opts Options) (pulled, error) {
 			return p, fmt.Errorf("seal snapshot for %s: %w", provider, err)
 		}
 	}
+	for i := range p.sources {
+		if c := p.counts[p.sources[i].Source]; len(c) > 0 {
+			p.sources[i].RecordCounts = c
+		}
+	}
 	sort.Slice(p.sources, func(i, j int) bool { return p.sources[i].Source < p.sources[j].Source })
+	if opts.Log != nil {
+		for _, src := range p.sources {
+			classes := make([]string, 0, len(src.RecordCounts))
+			for class := range src.RecordCounts {
+				classes = append(classes, class)
+			}
+			sort.Strings(classes)
+			line := src.Source + ":"
+			total := 0
+			for _, class := range classes {
+				line += fmt.Sprintf(" %d %s", src.RecordCounts[class], class)
+				total += src.RecordCounts[class]
+			}
+			if total == 0 {
+				line += " no records"
+			}
+			fmt.Fprintln(opts.Log, line)
+		}
+	}
 	return p, nil
 }

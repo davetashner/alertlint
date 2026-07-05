@@ -193,6 +193,9 @@ type SourceMeta struct {
 	AdapterVersion         string `json:"adapter_version"`
 	CanonicalSchemaVersion string `json:"canonical_schema_version"`
 	SnapshotKey            string `json:"snapshot_key"`
+	// RecordCounts is the per-class pull tally (configs/events/responses/
+	// cis/maintenance) — additive field for run observability.
+	RecordCounts map[string]int `json:"record_counts,omitempty"`
 }
 
 // FindingID computes the deterministic content-hash id of a finding:

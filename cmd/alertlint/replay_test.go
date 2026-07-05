@@ -207,7 +207,7 @@ func buildCacheCorpus(t *testing.T, repoRoot, cacheDir string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, class := range []string{"configs", "events", "responses", "cis"} {
+		for _, class := range []string{"configs", "events", "responses", "cis", "maintenance"} {
 			raw, err := os.ReadFile(filepath.Join(demo, prov.Name(), class+".jsonl"))
 			if os.IsNotExist(err) {
 				continue
