@@ -71,8 +71,11 @@ scripts/check_contract.sh <corpus-dir>  # output-contract jq acceptance (corpus 
 
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+Pipeline: adapters (internal/adapter/{datadog,newrelic,cloudwatch,splunk,pagerduty,servicenow}) emit canonical records (internal/model) → identity resolver joins artifacts to CMDB CIs (internal/identity) → deterministic scoring (internal/score) + archetype coverage (internal/archetype) → per-service JSON contract (internal/output) written by internal/pipeline. `alertlint worklist` aggregates corpora; the Claude skill (skills/alertlint) consumes documents and proposes changes. Hard boundary (ADR 0003): CLI never calls an LLM, skill never recomputes. Determinism is contractual: byte-identical output per input (golden fixtures + replay tests enforce it).
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+- Specs in docs/specs trace REQ-<CATEGORY>-NNN ids; CI enforces existence (scripts/check_traceability.py)
+- Adapters: fixture-mocked at the HTTP RoundTripper or SDK-interface boundary; all pass internal/adapter/adaptertest.Run
+- Absent means unknown, never a guessed default; enums are closed; explicit float64() conversions around multiply-accumulate (FMA determinism)
+- Every scoring constant lives in configs/scoring.yaml; changing one bumps scoring_config_version
