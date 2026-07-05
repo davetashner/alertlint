@@ -19,6 +19,7 @@ import (
 	"github.com/davetashner/alertlint/internal/adapter/newrelic"
 	"github.com/davetashner/alertlint/internal/adapter/pagerduty"
 	"github.com/davetashner/alertlint/internal/adapter/servicenow"
+	"github.com/davetashner/alertlint/internal/adapter/splunk"
 	"github.com/davetashner/alertlint/internal/archetype"
 	"github.com/davetashner/alertlint/internal/identity"
 	"github.com/davetashner/alertlint/internal/output"
@@ -178,6 +179,13 @@ func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
 		}
 		registered++
 	}
+	if base := os.Getenv("SPLUNK_URL"); base != "" {
+		if err := registry.Register(&splunk.Adapter{BaseURL: base, Token: os.Getenv("SPLUNK_TOKEN")}); err != nil {
+			fmt.Fprintln(stderr, err)
+			return nil, err
+		}
+		registered++
+	}
 	if base := os.Getenv("SERVICENOW_URL"); base != "" {
 		if err := registry.Register(&servicenow.Adapter{
 			BaseURL: base, User: os.Getenv("SERVICENOW_USER"), Password: os.Getenv("SERVICENOW_PASSWORD"),
@@ -188,7 +196,7 @@ func liveRegistry(stderr io.Writer) (*adapter.Registry, error) {
 		registered++
 	}
 	if registered == 0 {
-		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, NEW_RELIC_API_KEY, AWS_REGION/AWS_PROFILE, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
+		fmt.Fprintln(stderr, "alertlint analyze: no source credentials found — set DD_API_KEY/DD_APP_KEY, NEW_RELIC_API_KEY, AWS_REGION/AWS_PROFILE, SPLUNK_URL/SPLUNK_TOKEN, PAGERDUTY_TOKEN, and/or SERVICENOW_URL/SERVICENOW_USER/SERVICENOW_PASSWORD (or use --replay)")
 		return nil, nil
 	}
 	return registry, nil
